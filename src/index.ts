@@ -6,46 +6,32 @@ import { chat } from './ai.js';
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 10000;
-app.get('/', (req, res) => res.send('System Online'));
-app.listen(port, '0.0.0.0');
+app.get('/', (req, res) => res.send('Online'));
+app.listen(process.env.PORT || 10000, '0.0.0.0');
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
   partials: [Partials.Channel],
 });
 
 const memory = new Map<string, any[]>();
-const processedIds = new Set<string>();
-
-client.once('ready', () => console.log(`✅ ${client.user?.tag} Ready`));
+const processing = new Set<string>();
 
 client.on('messageCreate', async (message) => {
-  // 1. أهم شرط: إذا كانت الرسالة من بوت (أو من توريال نفسها) تجاهلها فوراً
-  if (message.author.bot) return;
+  // تجاهل البوتات فوراً ومنع التكرار
+  if (message.author.bot || processing.has(message.id)) return;
 
   const isMentioned = message.mentions.has(client.user!);
   const isDM = message.guild === null;
 
-  // 2. معالجة الرسالة فقط إذا تم منشن البوت ولم يتم معالجتها من قبل
-  if ((isMentioned || isDM) && !processedIds.has(message.id)) {
-    processedIds.add(message.id);
+  if (isMentioned || isDM) {
+    processing.add(message.id);
 
     try {
       let history = memory.get(message.channelId) || [];
-      
-      // مسح الذاكرة إذا بدأت بالتكرار الممل
-      if (history.length > 4 && history[history.length-1].content === history[history.length-3].content) {
-        history = []; 
-      }
-
       history.push({ role: "user", content: message.content });
+
       await message.channel.sendTyping();
-      
       const reply = await chat(history);
 
       history.push({ role: "assistant", content: reply });
@@ -56,8 +42,8 @@ client.on('messageCreate', async (message) => {
     } catch (e) {
       console.error(e);
     } finally {
-      // تنظيف سجل المعالجة بعد 30 ثانية
-      setTimeout(() => processedIds.delete(message.id), 30000);
+      // تنظيف الـ ID بعد فترة كافية لضمان عدم التكرار
+      setTimeout(() => processing.delete(message.id), 15000);
     }
   }
 });
