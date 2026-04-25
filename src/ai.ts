@@ -1,22 +1,29 @@
-import OpenAI from "openai";
+import { HfInference } from "@huggingface/inference";
 
 export async function chat(history: any[]): Promise<string> {
-  const openai = new OpenAI({
-    baseURL: "https://openrouter.ai/api/v1",
-    apiKey: process.env.OPENROUTER_API_KEY,
-  });
+  // تأكد إن الاسم في رندر هو HF_TOKEN
+  const hf = new HfInference(process.env.HF_TOKEN);
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "google/gemini-flash-1.5-8b", // موديل قوقل بس عن طريق وسيط شغال 100%
-      messages: [
-        { role: "system", content: "أنت مساعد ذكي بلمحة من روح توريال. لهجتك سعودية سنعة ومزيج مع إنجليزي. آرثر مورغان هو أسطورة ريد ديد وليس لاعب كرة قدم! خاطب العيال دائماً بصيغة المذكر. خلك واقعي وابتعد عن الكرنج." },
-        ...history.map(h => ({ role: h.role, content: h.content }))
-      ],
+    const systemInstruction = "أنت مساعد ذكي بلمحة من روح توريال. لهجتك سعودية سنعة ومزيج مع إنجليزي. آرثر مورغان هو بطل ريد ديد وليس لاعب كرة قدم! خاطب العيال دائماً بصيغة المذكر. خلك واقعي وابتعد عن الكرنج.";
+    
+    const messages = [
+      { role: "system", content: systemInstruction },
+      ...history.map(h => ({ 
+        role: h.role === "assistant" ? "assistant" : "user", 
+        content: h.content 
+      }))
+    ];
+
+    const out = await hf.chatCompletion({
+      model: "Qwen/Qwen2.5-72B-Instruct",
+      messages: messages,
+      max_tokens: 500,
+      temperature: 0.5,
     });
 
-    return response.choices[0].message.content || "سم؟";
+    return out.choices[0].message.content || "سم؟";
   } catch (err: any) {
-    return `يا كاسبر فيه بلا في OpenRouter: ${err.message}`;
+    return `يا كاسبر فيه بلا في Hugging Face: ${err.message}`;
   }
 }
