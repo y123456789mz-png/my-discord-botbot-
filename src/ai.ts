@@ -1,8 +1,8 @@
 import OpenAI, { toFile } from "openai";
 
 // 1. جلب الإعدادات من المتغيرات أو استخدام قيم افتراضية مضمونة
-const apiKey = process.env["AI_INTEGRATIONS_OPENAI_API_KEY"];
-const baseURL = process.env["AI_INTEGRATIONS_OPENAI_BASE_URL"] || "https://openrouter.ai/api/v1";
+// جرب تحط المفتاح هنا مباشرة بين العلامتين '' عشان نلغي احتمال ان رندر مو قادره تقرأ المتغير
+const apiKey = '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';const baseURL = process.env["AI_INTEGRATIONS_OPENAI_BASE_URL"] || "https://openrouter.ai/api/v1";
 const CHAT_MODEL = process.env["AI_MODEL"] || "google/gemini-2.0-flash-lite-preview-02-05:free";
 
 if (!apiKey) {
