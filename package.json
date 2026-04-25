@@ -1,15 +1,21 @@
 {
-  "name": "discord-bot",
+  "name": "my-discord-bot",
   "version": "1.0.0",
-  "type": "module",
+  "description": "Casper's Smart Toriel Bot",
   "main": "src/index.ts",
-  "dependencies": {
-    "discord.js": "^14.14.1",
-    "groq-sdk": "^0.3.3",
-    "tsx": "^4.7.1",
-    "dotenv": "^16.4.5" 
-  },
+  "type": "module",
   "scripts": {
-    "start": "tsx src/index.ts"
+    "start": "npx tsx src/index.ts",
+    "dev": "npx tsx --watch src/index.ts",
+    "build": "echo 'No build step needed for tsx'"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5",
+    "tsx": "^4.19.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
