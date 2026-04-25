@@ -1,31 +1,23 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 
-export async function chat(history: { role: string, content: string }[]): Promise<string> {
-  // حط مفتاحك الجديد هنا
-  const apiKey = "AIzaSyAi-Pw8vRyNJ-_h1t2Frj4t8i9JmBhnr5E"; 
-  const genAI = new GoogleGenerativeAI(apiKey);
+export async function chat(history: any[]): Promise<string> {
+  // 1. حط مفتاح Groq اللي جبته هنا
+  const apiKey = "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"; 
+  const groq = new Groq({ apiKey });
 
   try {
-    // استخدمنا gemini-1.0-pro-001 (أقدم وأكثر نسخة مستقرة في التاريخ)
-    // هذي النسخة "الجوكر" اللي مستحيل حسابك ما يعرفها
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-
-    const chatSession = model.startChat({
-      history: history.slice(0, -1).map(msg => ({
-        role: msg.role === "assistant" ? "model" : "user",
-        parts: [{ text: msg.content }],
+    const chatCompletion = await groq.chat.completions.create({
+      messages: history.map(msg => ({
+        role: msg.role,
+        content: msg.content,
       })),
+      model: "llama-3.3-70b-versatile",
     });
 
-    const userMessage = history[history.length - 1].content;
-    const result = await chatSession.sendMessage(userMessage);
-    const response = await result.response;
-    
-    return response.text();
+    return chatCompletion.choices[0]?.message?.content || "رد فاضي";
 
   } catch (err: any) {
-    // لو حتى هذا ما اشتغل، فالمشكلة رسمياً في المفتاح نفسه
-    return `يا كاسبر، حتى الموديل القديم يقول: ${err.message}`;
+    return `يا كاسبر حتى Groq زعلان: ${err.message}`;
   }
 }
 
