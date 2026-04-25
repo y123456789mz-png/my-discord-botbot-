@@ -1,3 +1,4 @@
+import { chat } from "./ai.js"; // نعم، نكتب .js حتى لو الملف .ts لأننا نستخدم "type": "module"
 import { Client, GatewayIntentBits } from "discord.js";
 import { chat } from "./ai.js";
 
