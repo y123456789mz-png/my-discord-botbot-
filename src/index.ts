@@ -1,26 +1,39 @@
 import { Client, GatewayIntentBits } from 'discord.js';
+import express from 'express';
 import dotenv from 'dotenv';
 import { chat } from './ai.js';
 
 dotenv.config();
 
+// سيرفر وهمي لفتح المنفذ (Port) لمنع توقف الخدمة في Render المجاني
+const app = express();
+const port = process.env.PORT || 10000;
+app.get('/', (req, res) => res.send('توريال تعمل بنجاح وبأتم الصحة!'));
+app.listen(port, () => console.log(`سيرفر البورت شغال على منفذ: ${port}`));
+
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
 });
 
 const memory = new Map<string, any[]>();
-// نظام لمنع الرد المكرر
 const processingMessages = new Set();
+
+client.once('ready', (c) => {
+  console.log(`✅ توريال فزت وشغالة الحين باسم: ${c.user.tag}`);
+});
 
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
-  
-  // إذا البوت تم منشنه أو كانت رسالة خاصة
+
   const isMentioned = message.mentions.has(client.user!);
   const isDM = message.guild === null;
 
   if ((isMentioned || isDM) && !processingMessages.has(message.id)) {
-    processingMessages.add(message.id); // سجل الرسالة كأنها تحت المعالجة
+    processingMessages.add(message.id);
 
     try {
       let channelHistory = memory.get(message.channelId) || [];
@@ -35,9 +48,8 @@ client.on('messageCreate', async (message) => {
 
       await message.reply(reply);
     } catch (error) {
-      console.error(error);
+      console.error("Error occurred:", error);
     } finally {
-      // احذفها من القائمة بعد 5 ثواني عشان ما يتراكم السيت
       setTimeout(() => processingMessages.delete(message.id), 5000);
     }
   }
