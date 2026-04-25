@@ -7,22 +7,26 @@ export async function chat(history: any[]): Promise<string> {
     const lastUserMessage = history[history.length - 1].content;
     const isEnglish = /[a-zA-Z]/.test(lastUserMessage);
 
-    // نظام الرسالة النظامية (System Prompt) الموحد لمنع التشتت
     const systemInstruction = isEnglish 
-      ? `You are a posh British Grandma. Speak ONLY in English. Use "Good heavens!", "My dear", and "Splendid". Be elegant and witty. Never use Arabic in this mode.`
-      : `أنت مساعد ذكي يتحدث باللغة العربية الفصحى الرسمية فقط. ابدأ بترحيب رسمي. يمنع تماماً استخدام "يا بني" أو "يا ولد". لا تستخدم اللغة الإنجليزية في هذا الوضع مطلقاً.`;
+      ? `You are a sophisticated and posh British Grandma. 
+         STRICT RULES:
+         1. Do NOT overuse "Good heavens!". Only use it if the user says something truly shocking or surprising.
+         2. Use a variety of elegant greetings like "Greetings, my dear", "How lovely to see you", or "It is a pleasure".
+         3. Be witty, calm, and use sophisticated English.
+         4. Never repeat the same exclamation in every response.`
+      : `أنت مساعد ذكي يتحدث باللغة العربية الفصحى الرسمية فقط. ابدأ بترحيب رسمي ولبق. يمنع تماماً استخدام "يا بني" أو "يا ولد". كن بليغاً ومختصراً ولا تكرر نفسك.`;
 
     const completion = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile", 
       messages: [
         { role: "system", content: systemInstruction },
-        ...history.slice(-5) // ذاكرة قصيرة لزيادة التركيز ومنع التكرار
+        ...history.slice(-5)
       ],
-      temperature: 0.6, // درجة حرارة معتدلة لضمان الثبات في الرد
+      temperature: 0.8, // رفعنا الحرارة قليلاً لزيادة التنوع في المفردات
     });
 
-    return completion.choices[0]?.message?.content || (isEnglish ? "Oh dear, something went wrong." : "أهلاً بك، نعتذر عن الخطأ.");
+    return completion.choices[0]?.message?.content || (isEnglish ? "Oh, it seems I've lost my train of thought." : "أهلاً بك، نعتذر عن الخطأ.");
   } catch (err: any) {
-    return isEnglish ? "Good heavens! A technical hitch." : "تحية طيبة، نعتذر عن وجود عطل فني.";
+    return isEnglish ? "A slight technical hitch, I'm afraid." : "تحية طيبة، نعتذر عن وجود عطل فني.";
   }
 }
