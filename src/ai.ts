@@ -1,29 +1,31 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
 export async function chat(history: any[]): Promise<string> {
-  const apiKey = "AIzaSyAudb_O-Al-ld5GfFIm03EXsbvwWqqmAik"; 
-  
-  // الرابط الرسمي والمباشر لموديل Flash
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  // 1. المفتاح الجديد اللي توك مطلعه حطه هنا
+  const apiKey = "AIzaSyCkruBFCAA2Uu19gEpZMDwScO9MNjy1-i0"; 
+  const genAI = new GoogleGenerativeAI(apiKey);
 
   try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: history.map(msg => ({
-          role: msg.role === "assistant" ? "model" : "user",
-          parts: [{ text: msg.content }]
-        }))
-      })
+    // استخدمنا gemini-1.5-flash
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const chatSession = model.startChat({
+      history: history.map(msg => ({
+        role: msg.role === "assistant" ? "model" : "user",
+        parts: [{ text: msg.content }],
+      })),
     });
 
-    const data: any = await response.json();
+    const result = await chatSession.sendMessage(history[history.length - 1].content);
+    const response = await result.response;
+    return response.text();
 
-    if (data.error) {
-      return `خطأ مباشر من قوقل (${data.error.code}): ${data.error.message}`;
-    }
-
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || "رد فاضي، جرب مرة ثانية.";
   } catch (err: any) {
-    return `فشل الاتصال: ${err.message}`;
+    // إذا لسه فيه مشكلة، بيطلع لنا الكود الحقيقي للخطأ هنا
+    return `يا كاسبر فيه مشكلة: ${err.message}`;
   }
+}
+
+export async function voiceChat() {
+  return { transcript: "", replyText: "معطل", audioWav: Buffer.alloc(0) };
 }
