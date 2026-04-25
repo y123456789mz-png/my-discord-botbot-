@@ -1,15 +1,21 @@
 {
   "name": "my-discord-bot",
   "version": "1.0.0",
+  "description": "A sophisticated Discord bot with dual language personality",
   "type": "module",
+  "main": "src/index.ts",
   "scripts": {
-    "start": "npx tsx src/index.ts"
+    "start": "npx tsx src/index.ts",
+    "dev": "npx tsx --watch src/index.ts"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "groq-sdk": "^0.3.3",
     "discord.js": "^14.16.3",
     "dotenv": "^16.4.5",
+    "express": "^4.18.2",
+    "groq-sdk": "^0.3.3",
     "tsx": "^4.19.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
