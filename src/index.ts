@@ -1,43 +1,30 @@
 import http from 'http';
-
-// سيرفر وهمي عشان Render ما يقفل الخدمة المجانية
-http.createServer((req, res) => {
-  res.write("I am alive");
-  res.end();
-}).listen(process.env.PORT || 3000);
 import { createBot } from "./bot";
 import { logger } from "./logger";
 
-const token = process.env["DISCORD_BOT_TOKEN"];
+// 1. السيرفر الوهمي عشان Render ما يطفي البوت (ضروري للنسخة المجانية)
+const PORT = process.env.PORT || 10000;
+http.createServer((req, res) => {
+  res.write("Bot is Alive!");
+  res.end();
+}).listen(PORT, () => {
+  logger.info(`Web server is running on port ${PORT}`);
+});
 
+// 2. تشغيل البوت
+const token = process.env["DISCORD_BOT_TOKEN"];
 if (!token) {
   logger.error("DISCORD_BOT_TOKEN environment variable is required");
   process.exit(1);
 }
 
 try {
-  // @ts-expect-error — no types ship with libsodium-wrappers
   const sodium = await import("libsodium-wrappers");
   const ready = (sodium.ready ?? sodium.default?.ready) as Promise<void> | undefined;
   if (ready) await ready;
   logger.info("libsodium ready");
 } catch (err) {
-  logger.warn({ err }, "libsodium-wrappers not available — relying on @noble/ciphers");
+  logger.warn({ err }, "libsodium-wrappers not available");
 }
 
 const client = createBot(token);
-
-const shutdown = (signal: string) => {
-  logger.info({ signal }, "Shutting down Discord bot");
-  client
-    .destroy()
-    .catch((err) => logger.error({ err }, "Error during shutdown"))
-    .finally(() => process.exit(0));
-};
-
-process.on("SIGINT", () => shutdown("SIGINT"));
-process.on("SIGTERM", () => shutdown("SIGTERM"));
-
-process.on("unhandledRejection", (reason) => {
-  logger.error({ reason }, "Unhandled promise rejection");
-});
