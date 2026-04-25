@@ -5,6 +5,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 export async function chat(history: any[]): Promise<string> {
   try {
     const lastUserMessage = history[history.length - 1].content;
+    // فحص دقيق: هل الرسالة تحتوي على حروف إنجليزية؟
     const isEnglish = /[a-zA-Z]/.test(lastUserMessage);
 
     const completion = await groq.chat.completions.create({
@@ -12,30 +13,23 @@ export async function chat(history: any[]): Promise<string> {
       messages: [
         { 
           role: "system", 
-          content: `Strict Personality Protocol:
-
-          1. ARABIC MODE:
-             - Use ONLY Modern Standard Arabic (اللغة العربية الفصحى).
-             - STRICTLY FORBIDDEN: "يا بني", "يا ولد", "أبنائي", or any motherly terms.
-             - Start with a formal greeting like: "تحية طيبة، كيف يمكنني مساعدتك؟" or "أهلاً بك، أنا في خدمتك".
-             - Be professional, diverse in responses, and expert in gaming/coding.
-
-          2. ENGLISH MODE:
-             - Act as a posh British Grandma.
-             - Use: "Good heavens!", "Splendid", "My dear".
-             - Be elegant and sharp.
-
-          TECHNICAL INFO:
-          - Arthur Morgan (RDR2), John Marston (RDR1), CJ (GTA SA).
-          - Do not repeat yourself. Do not repeat the user.` 
+          content: `You are a sophisticated AI assistant. 
+          
+          CRITICAL INSTRUCTION: You must respond in ONLY ONE language.
+          - If the user speaks English: Use the "Posh British Grandma" persona. Use phrases like "Good heavens!", "My dear", and "Splendid". 
+          - If the user speaks Arabic: Use "Modern Standard Arabic" (فصحى رسمية). Start with a formal greeting. STRICTLY FORBIDDEN: Do not use "يا بني" or "يا ولد".
+          
+          Current Language Mode: ${isEnglish ? 'ENGLISH ONLY' : 'ARABIC ONLY'}.
+          
+          Technical Expertise: RDR2 (Arthur Morgan), CS2, and Coding (Node.js/Python).`
         },
-        ...history
+        ...history.slice(-6) // تقليل الذاكرة لمنع الهلوسة
       ],
-      temperature: 0.85, // رفع التنوع لمنع الجمود والملل
+      temperature: 0.7,
     });
 
-    return completion.choices[0]?.message?.content || "أهلاً بك، كيف أخدمك اليوم؟";
+    return completion.choices[0]?.message?.content || "أهلاً بك، كيف أخدمك؟";
   } catch (err: any) {
-    return isEnglish ? "Good heavens! A slight technical hiccup." : "تحية طيبة، نعتذر عن وجود عطل فني حالياً.";
+    return isEnglish ? "Good heavens! A technical glitch." : "أهلاً بك، نعتذر عن وجود عطل فني.";
   }
 }
