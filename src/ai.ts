@@ -1,16 +1,15 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function chat(history: any[]): Promise<string> {
-  // سحب مفتاح قوقل من الإعدادات
+  // تأكد إن اسم المتغير في Render هو GOOGLE_API_KEY بالضبط
   const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
   
-  // غيرنا اسم الموديل ليكون بدون إصدارات بيتا عشان يشتغل على طول
+  // استخدمنا Gemini 1.5 Pro - هذا الأذكى والأقوى
   const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash-latest", // زدنا كلمة latest عشان يضمن الاستقرار
+    model: "gemini-1.5-pro" 
   });
 
-  // إعدادات الشخصية والتعليمات
-  const systemInstruction = "أنت مساعد ذكي بلمحة من روح توريال. لهجتك سعودية سنعة ومزيج مع إنجليزي. آرثر مورغان هو أسطورة ريد ديد وليس لاعب كرة قدم! خاطب العيال دائماً بصيغة المذكر. خلك واقعي وابتعد عن الكرنج.";
+  const systemInstruction = "أنت مساعد ذكي (AI) بلمحة من روح توريال. لهجتك سعودية سنعة ومزيج مع إنجليزي. آرثر مورغان هو بطل ريد ديد وليس لاعب كرة قدم. خاطب الشباب بصيغة المذكر دائماً. خلك ثقيل وذكي وبعيد عن الكرنج.";
 
   try {
     const chatSession = model.startChat({
@@ -19,21 +18,20 @@ export async function chat(history: any[]): Promise<string> {
         parts: [{ text: h.content }],
       })),
       generationConfig: {
-        maxOutputTokens: 500,
-        temperature: 0.5,
-      },
+        temperature: 0.7, // رفعنا الحرارة شوي عشان يصير "بشري" أكثر في السوالف
+        maxOutputTokens: 800,
+      }
     });
 
-    // إضافة التعليمات للنص المرسل عشان يلتزم بالشخصية
     const lastMessage = history[history.length - 1].content;
-    const prompt = `${systemInstruction}\n\nالمستخدم يقول: ${lastMessage}`;
+    const fullPrompt = `${systemInstruction}\n\nالمستخدم يقول: ${lastMessage}`;
     
-    const result = await chatSession.sendMessage(prompt);
+    const result = await chatSession.sendMessage(fullPrompt);
     const response = await result.response;
     
     return response.text();
   } catch (err: any) {
-    console.error(err);
-    return `يا كاسبر قوقل لسه زعلان، شيك على الـ API Key: ${err.message}`;
+    console.error("Gemini Error Details:", err);
+    return `يا كاسبر فيه مشكلة بالاتصال مع قوقل: ${err.message}`;
   }
 }
