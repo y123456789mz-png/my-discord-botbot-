@@ -6,21 +6,17 @@ export async function chat(history: any[]): Promise<string> {
 
   const systemMessage = {
     role: "system",
-    content: "أنت مساعد ذكي ومحايد في ديسكورد، لست ذكراً ولا أنثى. تحدث بلهجة سعودية عامية بيضاء ومختصرة جداً. ممنوع استخدام أي لغة غير العربية. لا تتفلسف، جاوب على قد السؤال وبس."
+    content: "أنتِ بنت سعودية ذكية وفلة. لغتك هي العامية السعودية فقط. ردي بأسلوب بنات مكة أو الرياض وبس. خلك ثقيلة ومختصرة ولا تستخدمي إنجليزي أو أردو."
   };
 
   try {
     const chatCompletion = await groq.chat.completions.create({
-      messages: [systemMessage, ...history.map(msg => ({
-        role: msg.role === "assistant" ? "assistant" : "user",
-        content: msg.content,
-      }))],
+      messages: [systemMessage, ...history],
       model: "llama-3.3-70b-versatile",
-      temperature: 0.4, // نزلناها أكثر عشان يركد وما يهلوس
+      temperature: 0.5,
     });
 
-    return chatCompletion.choices[0]?.message?.content || "سم؟";
-
+    return chatCompletion.choices[0]?.message?.content || "هلا..";
   } catch (err: any) {
     return `في مشكلة: ${err.message}`;
   }
