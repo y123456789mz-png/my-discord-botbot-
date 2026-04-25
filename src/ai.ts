@@ -1,59 +1,38 @@
-import { Client, GatewayIntentBits } from 'discord.js';
-import express from 'express';
-import dotenv from 'dotenv';
-import { chat } from './ai.js';
+import Groq from "groq-sdk";
 
-dotenv.config();
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-// --- خدعة رندر: سيرفر وهمي لفتح البورت ---
-const app = express();
-const port = process.env.PORT || 10000;
-app.get('/', (req, res) => res.send('توريال تعمل بنجاح!'));
-app.listen(port, () => console.log(`سيرفر البورت شغال على منفذ: ${port}`));
-// ---------------------------------------
+export async function chat(history: any[]): Promise<string> {
+  try {
+    const lastUserMessage = history[history.length - 1].content;
+    const isEnglish = /[a-zA-Z]/.test(lastUserMessage);
 
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
-});
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile", 
+      messages: [
+        { 
+          role: "system", 
+          content: `أنت مساعد ذكي بشخصية فريدة تدمج بين "وقار الجدات البريطانيات" و"حكمة وحنان توريال".
 
-const memory = new Map<string, any[]>();
-const processingMessages = new Set();
+          الأسلوب اللغوي:
+          - بالعربية: تحدث بلغة عربية فصحى بليغة ودافئة جداً. استخدم تعابير تعكس الحكمة مثل: "يا بني"، "عزيزي كاسبر"، "على الرحب والسعة". اجعل نصائحك في الألعاب والتقنية تبدو كأنها دروس من خبير مهتم وحكيم.
+          - بالإنجليزية: Speak with a posh British accent (UK Grandma style). Use "Good heavens", "Splendid", and "Young man". Be witty and sharp.
 
-client.once('clientReady', (c) => {
-  console.log(`✅ توريال فزت وشغالة الحين باسم: ${c.user.tag}`);
-});
+          القواعد المعرفية:
+          - خبير في ألعاب الفيديو (RDR2, GTA, CS2) والبرمجة (Python, Node.js).
+          - تذكر دائماً: آرثر مورغان هو بطل ردد 2، وجون مارستون بطل ردد 1، وسي جي من سان أندرياس.
+          - لا تكرر الردود، وكن ذكياً جداً في تحليل أسئلة كاسبر.` 
+        },
+        ...history.slice(-10).map(h => ({ 
+          role: h.role === "assistant" ? "assistant" : "user", 
+          content: h.content 
+        }))
+      ],
+      temperature: 0.6,
+    });
 
-client.on('messageCreate', async (message) => {
-  if (message.author.bot) return;
-
-  const isMentioned = message.mentions.has(client.user!);
-  const isDM = message.guild === null;
-
-  if ((isMentioned || isDM) && !processingMessages.has(message.id)) {
-    processingMessages.add(message.id);
-
-    try {
-      let channelHistory = memory.get(message.channelId) || [];
-      channelHistory.push({ role: "user", content: message.content });
-
-      await message.channel.sendTyping();
-      const reply = await chat(channelHistory);
-
-      channelHistory.push({ role: "assistant", content: reply });
-      if (channelHistory.length > 10) channelHistory.shift();
-      memory.set(message.channelId, channelHistory);
-
-      await message.reply(reply);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setTimeout(() => processingMessages.delete(message.id), 5000);
-    }
+    return completion.choices[0]?.message?.content || "كيف يمكنني مساعدتك يا بني؟";
+  } catch (err: any) {
+    return "يا إلهي، يبدو أن القوى التقنية قد خذلتنا للحظة! أعتذر يا بني.";
   }
-});
-
-client.login(process.env.DISCORD_TOKEN);
+}
