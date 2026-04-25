@@ -5,7 +5,7 @@ export type ChatMessage = {
 
 export async function chat(history: ChatMessage[]): Promise<string> {
   // حط مفتاحك هنا
-  const apiKey = "AIzaSyDNg1dbkerx1WIipn5CILC23L49SHUh8iM"; 
+  const apiKey = "AIzaSyDFMkbi2N07xemy9CrOSX4_Om1At32g_HI"; 
   
   // الرابط هذا هو "السر" اللي يحل مشكلة الـ 404
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
