@@ -4,10 +4,10 @@ export type ChatMessage = {
 };
 
 export async function chat(history: ChatMessage[]): Promise<string> {
-  // المفتاح الجديد حقك
+  // 1. روح طلع مفتاح جديد تماماً "Fresh" وحطه هنا
   const apiKey = "AIzaSyDFMkbi2N07xemy9CrOSX4_Om1At32g_HI"; 
-  
-  // الرابط المباشر لموديل Flash المستقر
+
+  // سنحاول استخدام الموديل gemini-1.5-flash برابط v1beta (الأكثر شيوعاً)
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
   try {
@@ -23,19 +23,20 @@ export async function chat(history: ChatMessage[]): Promise<string> {
     });
 
     const data: any = await response.json();
-    
+
     if (data.error) {
-      return `خطأ من قوقل (${data.error.code}): ${data.error.message}`;
+      // لو المفتاح خربان، بيعلمنا هنا بوضوح
+      return `خطأ تقني (${data.error.code}): ${data.error.message}`;
     }
 
     if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-        return data.candidates[0].content.parts[0].text;
+      return data.candidates[0].content.parts[0].text;
     }
 
-    return "قوقل ردت بس بدون نص، جرب ترسل شي ثاني.";
+    return "رد غير مفهوم من السيرفر.";
 
   } catch (error: any) {
-    return `فشل الاتصال: ${error.message}`;
+    return `فشل الاتصال بالخادم: ${error.message}`;
   }
 }
 
