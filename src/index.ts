@@ -1,30 +1,30 @@
-import http from 'http';
-import { createBot } from "./bot";
-import { logger } from "./logger";
+import { Client, GatewayIntentBits } from 'discord.js';
+import { chat } from './ai';
 
-// 1. السيرفر الوهمي عشان Render ما يطفي البوت (ضروري للنسخة المجانية)
-const PORT = process.env.PORT || 10000;
-http.createServer((req, res) => {
-  res.write("Bot is Alive!");
-  res.end();
-}).listen(PORT, () => {
-  logger.info(`Web server is running on port ${PORT}`);
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
 });
 
-// 2. تشغيل البوت
-const token = process.env["DISCORD_BOT_TOKEN"];
-if (!token) {
-  logger.error("DISCORD_BOT_TOKEN environment variable is required");
-  process.exit(1);
-}
+client.on('ready', () => {
+  console.log(`تم تشغيل البوت بنجاح باسم: ${client.user?.tag}`);
+});
 
-try {
-  const sodium = await import("libsodium-wrappers");
-  const ready = (sodium.ready ?? sodium.default?.ready) as Promise<void> | undefined;
-  if (ready) await ready;
-  logger.info("libsodium ready");
-} catch (err) {
-  logger.warn({ err }, "libsodium-wrappers not available");
-}
+client.on('messageCreate', async (message) => {
+  if (message.author.bot) return;
 
-const client = createBot(token);
+  // البوت بيرد على أي رسالة توصله
+  try {
+    const response = await chat([{ role: "user", content: message.content }]);
+    await message.reply(response);
+  } catch (error) {
+    console.error(error);
+    await message.reply("فيه مشكلة فنية بالكود الجديد!");
+  }
+});
+
+// تأكد إنك حاط التوكن الجديد في Render في المتغير DISCORD_BOT_TOKEN
+client.login(process.env.DISCORD_BOT_TOKEN);
+
+// تشغيل سيرفر بسيط عشان رندر ما يقفل الخدمة
+import http from 'http';
+http.createServer((req, res) => { res.write('OK'); res.end(); }).listen(10000);
