@@ -4,8 +4,8 @@ export type ChatMessage = {
 };
 
 export async function chat(history: ChatMessage[]): Promise<string> {
-  const apiKey = process.env["AI_INTEGRATIONS_OPENAI_API_KEY"];
-  // تأكد إنك كاتب اسم الموديل صح في Render أو خليه هنا يدوي
+  // حط مفتاح الـ API حقك هنا مباشرة بين علامتي التنصيص
+  const apiKey = "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"; 
   const model = "mistralai/mistral-7b-instruct:free"; 
 
   try {
@@ -14,7 +14,6 @@ export async function chat(history: ChatMessage[]): Promise<string> {
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json"
-        // شلنا الـ Referer والـ Title لأنها أحياناً تسبب User not found إذا كانت القيم غلط
       },
       body: JSON.stringify({
         "model": model,
@@ -28,14 +27,13 @@ export async function chat(history: ChatMessage[]): Promise<string> {
     const data: any = await response.json();
 
     if (data.error) {
-      console.error("OpenRouter Error Details:", data.error);
       return `خطأ من السيرفر: ${data.error.message}`;
     }
 
-    return data.choices?.[0]?.message?.content || "السيرفر رد برد فاضي، جرب مرة ثانية.";
+    return data.choices?.[0]?.message?.content || "رد فاضي";
 
   } catch (error: any) {
-    return `فشل الاتصال: ${error.message}`;
+    return `فشل في الاتصال: ${error.message}`;
   }
 }
 
