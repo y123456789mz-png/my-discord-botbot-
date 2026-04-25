@@ -1,15 +1,13 @@
-export type ChatMessage = {
-  role: "system" | "user" | "assistant";
-  content: string;
-};
-
 export async function chat(history: ChatMessage[]): Promise<string> {
-  // حط مفتاح Google AI Studio حقك هنا (اللي يبدأ بـ AIza)
+  // تأكد إن المفتاح يبدأ بـ AIza
   const apiKey = "AIzaSyDNg1dbkerx1WIipn5CILC23L49SHUh8iM"; 
-  const model = "gemini-1.5-flash"; 
+  
+  // غيرنا اسم الموديل ليكون النسخة الأكثر استقراراً
+  const model = "gemini-1.5-flash-latest"; 
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+    // جربنا نغير v1beta إلى v1 لأنها أضمن
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -21,13 +19,12 @@ export async function chat(history: ChatMessage[]): Promise<string> {
     });
 
     const data: any = await response.json();
+    
+    // هذا السطر عشان لو طلع خطأ نعرفه بالضبط
     if (data.error) return `خطأ من قوقل: ${data.error.message}`;
+    
     return data.candidates?.[0]?.content?.parts?.[0]?.text || "لم يتم استلام رد.";
   } catch (err: any) {
     return `فشل الاتصال: ${err.message}`;
   }
-}
-
-export async function voiceChat() {
-  return { transcript: "", replyText: "معطل", audioWav: Buffer.alloc(0) };
 }
