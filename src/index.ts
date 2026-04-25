@@ -7,25 +7,19 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 10000;
-app.get('/', (req, res) => res.send('توريال تعمل بكفاءة!'));
-app.listen(port, '0.0.0.0', () => console.log(`✅ Port active: ${port}`));
+app.get('/', (req, res) => res.send('System Online'));
+app.listen(port, '0.0.0.0');
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
   partials: [Partials.Channel],
 });
 
 const memory = new Map<string, any[]>();
-// قفل لمنع التكرار
-const processedMessages = new Set<string>();
+// نظام القفل بالبصمة
+const processedIds = new Set<string>();
 
-client.once('ready', (c) => {
-  console.log(`✅ المتصل الآن: ${c.user.tag}`);
-});
+client.once('ready', () => console.log(`✅ ${client.user?.tag} is active`));
 
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
@@ -33,27 +27,32 @@ client.on('messageCreate', async (message) => {
   const isMentioned = message.mentions.has(client.user!);
   const isDM = message.guild === null;
 
-  // التحقق من القفل لمنع الرد المزدوج
-  if ((isMentioned || isDM) && !processedMessages.has(message.id)) {
-    processedMessages.add(message.id);
+  if ((isMentioned || isDM) && !processedIds.has(message.id)) {
+    processedIds.add(message.id); // قفل فوري
 
     try {
-      let channelHistory = memory.get(message.channelId) || [];
-      channelHistory.push({ role: "user", content: message.content });
+      let history = memory.get(message.channelId) || [];
+      
+      // إذا المحادثة علقت في التكرار، نصفر الذاكرة جزئياً
+      if (history.length > 5 && history[history.length-1].content === history[history.length-3].content) {
+        history = history.slice(-2); 
+      }
 
+      history.push({ role: "user", content: message.content });
       await message.channel.sendTyping();
-      const reply = await chat(channelHistory);
+      
+      const reply = await chat(history);
 
-      channelHistory.push({ role: "assistant", content: reply });
-      if (channelHistory.length > 10) channelHistory.shift();
-      memory.set(message.channelId, channelHistory);
+      history.push({ role: "assistant", content: reply });
+      if (history.length > 8) history.shift();
+      memory.set(message.channelId, history);
 
       await message.reply(reply);
-    } catch (error) {
-      console.error("Execution error:", error);
+    } catch (e) {
+      console.error(e);
     } finally {
-      // إبقاء الرسالة في القفل لمدة دقيقة لضمان عدم التكرار
-      setTimeout(() => processedMessages.delete(message.id), 60000);
+      // تنظيف البصمات القديمة كل فترة
+      setTimeout(() => processedIds.delete(message.id), 30000);
     }
   }
 });
