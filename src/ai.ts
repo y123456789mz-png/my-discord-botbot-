@@ -5,7 +5,8 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 export async function chat(history: any[]): Promise<string> {
   try {
     const completion = await groq.chat.completions.create({
-      // موديل Llama 3 من Meta - ذكي وسريع ومجاني
+      // الموديل الجديد المعتمد من Groq حالياً
+      model: "llama-3.1-8b-instant",
       messages: [
         { 
           role: "system", 
@@ -16,7 +17,6 @@ export async function chat(history: any[]): Promise<string> {
           content: h.content 
         }))
       ],
-      model: "llama3-8b-8192",
     });
 
     return completion.choices[0]?.message?.content || "سم؟";
