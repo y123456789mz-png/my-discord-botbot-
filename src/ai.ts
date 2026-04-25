@@ -1,25 +1,27 @@
-import Groq from "groq-sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function chat(history: any[]): Promise<string> {
-  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
-  const systemMessage = {
-    role: "system",
-    content: `أنت مساعد ذكي جداً بلمحة من روح توريال.
-    - لهجتك سعودية سنعة ومزيج مع إنجليزي بطلاقة.
-    - آرثر مورغان (Arthur Morgan) هو بطل لعبة Red Dead Redemption 2، كاوبوي وأسطورة، وليس لاعب كرة قدم!
-    - خاطب الشباب بصيغة المذكر دائماً.
-    - خلك ثقيل وذكي وابتعد عن الكرنج ولهجات "إزاي".`
-  };
+  const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
+  
+  // استخدمنا gemini-1.5-flash كاسم موديل وحيد ومباشر
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   try {
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [systemMessage, ...history],
-      model: "llama-3.1-70b-versatile", // هذا الموديل أذكى بمراحل من اللي جربناه قبل
-      temperature: 0.5,
+    const chatSession = model.startChat({
+      history: history.slice(0, -1).map(h => ({
+        role: h.role === "user" ? "user" : "model",
+        parts: [{ text: h.content }],
+      })),
     });
-    return chatCompletion.choices[0]?.message?.content || "هلا بك..";
+
+    const systemInstruction = "أنت مساعد ذكي بلمحة من روح توريال. لهجتك سعودية سنعة ومزيج مع إنجليزي. آرثر مورغان هو بطل ريد ديد وليس لاعب كرة قدم! خاطب العيال دائماً بصيغة المذكر. خلك واقعي وابتعد عن الكرنج.";
+    
+    const lastMessage = history[history.length - 1].content;
+    const result = await chatSession.sendMessage(`${systemInstruction}\n\nالمستخدم: ${lastMessage}`);
+    
+    return result.response.text();
   } catch (err: any) {
-    return `يا كاسبر فيه مشكلة تقنية: ${err.message}`;
+    console.error("خطأ قوقل:", err);
+    return `يا كاسبر فيه مشكلة: ${err.message}`;
   }
 }
