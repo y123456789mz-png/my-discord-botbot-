@@ -4,26 +4,36 @@ export async function chat(history: any[]): Promise<string> {
   // سحب مفتاح قوقل من الإعدادات
   const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
   
-  // نستخدم موديل Flash لأنه طيارة وسريع في الرد
+  // غيرنا اسم الموديل ليكون بدون إصدارات بيتا عشان يشتغل على طول
   const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash",
-    systemInstruction: "أنت مساعد ذكي بلمحة من روح توريال. لهجتك سعودية سنعة ومزيج مع إنجليزي. آرثر مورغان هو أسطورة ريد ديد وليس لاعب كرة قدم! خاطب العيال دائماً بصيغة المذكر. خلك واقعي وابتعد عن الكرنج."
+    model: "gemini-1.5-flash-latest", // زدنا كلمة latest عشان يضمن الاستقرار
   });
 
+  // إعدادات الشخصية والتعليمات
+  const systemInstruction = "أنت مساعد ذكي بلمحة من روح توريال. لهجتك سعودية سنعة ومزيج مع إنجليزي. آرثر مورغان هو أسطورة ريد ديد وليس لاعب كرة قدم! خاطب العيال دائماً بصيغة المذكر. خلك واقعي وابتعد عن الكرنج.";
+
   try {
-    // تحويل التاريخ لصيغة قوقل (قوقل يحب يحس إنها محادثة حقيقية)
     const chatSession = model.startChat({
       history: history.slice(0, -1).map(h => ({
         role: h.role === "user" ? "user" : "model",
         parts: [{ text: h.content }],
       })),
+      generationConfig: {
+        maxOutputTokens: 500,
+        temperature: 0.5,
+      },
     });
 
+    // إضافة التعليمات للنص المرسل عشان يلتزم بالشخصية
     const lastMessage = history[history.length - 1].content;
-    const result = await chatSession.sendMessage(lastMessage);
+    const prompt = `${systemInstruction}\n\nالمستخدم يقول: ${lastMessage}`;
     
-    return result.response.text();
+    const result = await chatSession.sendMessage(prompt);
+    const response = await result.response;
+    
+    return response.text();
   } catch (err: any) {
-    return `يا كاسبر قوقل زعلان: ${err.message}`;
+    console.error(err);
+    return `يا كاسبر قوقل لسه زعلان، شيك على الـ API Key: ${err.message}`;
   }
 }
