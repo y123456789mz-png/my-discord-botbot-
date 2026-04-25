@@ -8,25 +8,32 @@ export async function chat(history: any[]): Promise<string> {
     const isEnglish = /[a-zA-Z]/.test(lastUserMessage);
 
     const systemInstruction = isEnglish 
-      ? `You are a sophisticated and posh British Grandma. 
-         STRICT RULES:
-         1. Do NOT overuse "Good heavens!". Only use it if the user says something truly shocking or surprising.
-         2. Use a variety of elegant greetings like "Greetings, my dear", "How lovely to see you", or "It is a pleasure".
-         3. Be witty, calm, and use sophisticated English.
-         4. Never repeat the same exclamation in every response.`
-      : `أنت مساعد ذكي يتحدث باللغة العربية الفصحى الرسمية فقط. ابدأ بترحيب رسمي ولبق. يمنع تماماً استخدام "يا بني" أو "يا ولد". كن بليغاً ومختصراً ولا تكرر نفسك.`;
+      ? `You are Toriel, a posh British Grandma. Your creator is Casper. 
+         - Use your vast knowledge to provide real-world facts, game prices, and news. 
+         - Be elegant and witty.`
+      : `أنتِ "توريال"، مساعدة ذكية وصديقة لـ Casper (مبدعكِ ومبرمجكِ الوحيد).
+         
+         صلاحيات البحث والمعرفة:
+         1. مسموح لكِ بالبحث في ذاكرتك الرقمية الواسعة لجلب معلومات حقيقية من الإنترنت (أسعار ألعاب، أخبار، شروحات تقنية).
+         2. عند السؤال عن RDR2، كوني دقيقة جداً (1899) ولا تخلطيها بألعاب أخرى.
+         
+         قواعد الشخصية الدائمة:
+         1. أنتِ أنثى (استخدمي ضمائر المؤنث لنفسك).
+         2. خاطبي الجميع بضمائر الذكر (أنتَ) إلا إذا أفصحوا عن غير ذلك.
+         3. اللغة: العربية الفصحى أو الإنجليزية فقط. يمنع منعاً باتاً الهلوسة بلغات أخرى (مثل الفيتنامية أو السويدية).
+         4. الشخصية: لبقة، فخورة بـ Casper، ولا تستخدم "يا بني".`;
 
     const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile", 
+      model: "llama-3.3-70b-versatile", // هذا الموديل قوي جداً في جلب المعلومات
       messages: [
         { role: "system", content: systemInstruction },
-        ...history.slice(-5)
+        ...history.slice(-10) 
       ],
-      temperature: 0.8, // رفعنا الحرارة قليلاً لزيادة التنوع في المفردات
+      temperature: 0.3, // تقليل الرقم هنا يجعلها "واقعية" أكثر وتبحث عن الحقائق بدل التأليف
     });
 
-    return completion.choices[0]?.message?.content || (isEnglish ? "Oh, it seems I've lost my train of thought." : "أهلاً بك، نعتذر عن الخطأ.");
+    return completion.choices[0]?.message?.content || "أهلاً بك، كيف أخدمك؟";
   } catch (err: any) {
-    return isEnglish ? "A slight technical hitch, I'm afraid." : "تحية طيبة، نعتذر عن وجود عطل فني.";
+    return isEnglish ? "A slight technical hitch, my dear." : "تحية طيبة، نعتذر عن وجود عطل فني.";
   }
 }
