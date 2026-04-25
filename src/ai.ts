@@ -1,25 +1,26 @@
-import OpenAI from "openai";
+import Groq from "groq-sdk";
+
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function chat(history: any[]): Promise<string> {
-  const openai = new OpenAI({
-    baseURL: "https://openrouter.ai/api/v1",
-    apiKey: process.env.OPENROUTER_API_KEY, // تأكد إنك حاطه في رندر
-  });
-
   try {
-    const response = await openai.chat.completions.create({
-      model: "google/gemini-2.0-flash-exp:free", // موديل مجاني وذكي جداً
+    const completion = await groq.chat.completions.create({
+      // موديل Llama 3 من Meta - ذكي وسريع ومجاني
       messages: [
-        { role: "system", content: "أنت مساعد ذكي بلمحة من روح توريال. لهجتك سعودية سنعة ومزيج مع إنجليزي. آرثر مورغان هو أسطورة ريد ديد وليس لاعب كرة قدم! خاطب العيال دائماً بصيغة المذكر. خلك ثقيل وذكي." },
+        { 
+          role: "system", 
+          content: "أنت مساعد ذكي بلمحة من روح توريال. لهجتك سعودية سنعة ومزيج مع إنجليزي. آرثر مورغان هو أسطورة ريد ديد وليس لاعب كرة قدم! خاطب العيال دائماً بصيغة المذكر. خلك واقعي وابتعد عن الكرنج." 
+        },
         ...history.map(h => ({ 
           role: h.role === "assistant" ? "assistant" : "user", 
           content: h.content 
         }))
       ],
+      model: "llama3-8b-8192",
     });
 
-    return response.choices[0].message.content || "سم؟";
+    return completion.choices[0]?.message?.content || "سم؟";
   } catch (err: any) {
-    return `يا كاسبر فيه مشكلة: ${err.message}`;
+    return `يا كاسبر فيه بلا في Groq: ${err.message}`;
   }
 }
