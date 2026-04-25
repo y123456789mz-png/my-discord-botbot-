@@ -1,15 +1,5 @@
-{
-  "name": "discord-bot",
-  "version": "1.0.0",
-  "type": "module",
-  "main": "src/index.ts",
-  "dependencies": {
+"dependencies": {
     "discord.js": "^14.14.1",
-    "@google/generative-ai": "^0.11.4",
-    "tsx": "^4.7.1",
-    "dotenv": "^16.4.5"
-  },
-  "scripts": {
-    "start": "tsx src/index.ts"
-  }
+    "groq-sdk": "^0.3.3",
+    "tsx": "^4.7.1"
 }
