@@ -1,3 +1,10 @@
+import http from 'http';
+
+// سيرفر وهمي عشان Render ما يقفل الخدمة المجانية
+http.createServer((req, res) => {
+  res.write("I am alive");
+  res.end();
+}).listen(process.env.PORT || 3000);
 import { createBot } from "./bot";
 import { logger } from "./logger";
 
