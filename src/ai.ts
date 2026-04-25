@@ -9,6 +9,7 @@ export async function chat(history: any[]): Promise<string> {
   }
 
   try {
+    // تم تصحيح الرابط هنا ليكون متوافق مع نسخة Llama 3 المستقرة
     const response = await axios.post(
       `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/meta/llama-3-8b-instruct`,
       {
@@ -24,13 +25,18 @@ export async function chat(history: any[]): Promise<string> {
         ]
       },
       {
-        headers: { Authorization: `Bearer ${apiToken}` }
+        headers: { 
+          Authorization: `Bearer ${apiToken}`,
+          "Content-Type": "application/json"
+        }
       }
     );
 
+    // كلاود فلير أحياناً يرجع النتيجة في result.response
     return response.data.result.response || "سم؟ وش بغيت؟";
   } catch (err: any) {
-    console.error("Cloudflare Error:", err.response?.data || err.message);
-    return `يا كاسبر فيه مشكلة في السيرفر: ${err.message}`;
+    // هنا بيطبع لك الخطأ بالتفصيل في الـ Logs عشان نعرف وش السالفة لو خرب
+    console.error("Cloudflare Detailed Error:", err.response?.data || err.message);
+    return `يا كاسبر فيه بلا في السيرفر: ${err.message}`;
   }
 }
