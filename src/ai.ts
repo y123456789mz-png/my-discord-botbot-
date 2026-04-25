@@ -1,5 +1,5 @@
 export async function chat(history: any[]): Promise<string> {
-  const apiKey = "AIzaSyCkruBFCAA2Uu19gEpZMDwScO9MNjy1-i0"; 
+  const apiKey = "AIzaSyAudb_O-Al-ld5GfFIm03EXsbvwWqqmAik"; 
   
   // الرابط الرسمي والمباشر لموديل Flash
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
