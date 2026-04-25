@@ -1,32 +1,36 @@
-import { HfInference } from "@huggingface/inference";
+import axios from "axios";
 
 export async function chat(history: any[]): Promise<string> {
-  const hf = new HfInference(process.env.HF_TOKEN);
+  const accountId = process.env.CF_ACCOUNT_ID;
+  const apiToken = process.env.CF_API_TOKEN;
+
+  if (!accountId || !apiToken) {
+    return "يا كاسبر، تأكد من إضافة CF_ACCOUNT_ID و CF_API_TOKEN في رندر!";
+  }
 
   try {
-    const systemInstruction = "أنت مساعد ذكي بلمحة من روح توريال. لهجتك سعودية سنعة ومزيج مع إنجليزي. آرثر مورغان هو بطل ريد ديد وليس لاعب كرة قدم! خاطب العيال دائماً بصيغة المذكر. خلك واقعي وابتعد عن الكرنج.";
-    
-    // تحويل التاريخ بطريقة يفهما هاقينق فيس صح
-    const messages = [
-      { role: "system", content: systemInstruction },
-      ...history.map(h => ({ 
-        role: h.role === "assistant" ? "assistant" : "user", 
-        content: h.content 
-      }))
-    ];
+    const response = await axios.post(
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/meta/llama-3-8b-instruct`,
+      {
+        messages: [
+          { 
+            role: "system", 
+            content: "أنت مساعد ذكي بلمحة من روح توريال. لهجتك سعودية سنعة ومزيج مع إنجليزي. آرثر مورغان هو أسطورة ريد ديد وليس لاعب كرة قدم! خاطب العيال دائماً بصيغة المذكر. خلك واقعي وابتعد عن الكرنج." 
+          },
+          ...history.map(h => ({ 
+            role: h.role === "assistant" ? "assistant" : "user", 
+            content: h.content 
+          }))
+        ]
+      },
+      {
+        headers: { Authorization: `Bearer ${apiToken}` }
+      }
+    );
 
-    const out = await hf.chatCompletion({
-      // الموديل هذا هو الأكثر استقراراً في Hugging Face حالياً
-      model: "meta-llama/Meta-Llama-3-8B-Instruct",
-      messages: messages,
-      max_tokens: 500,
-      temperature: 0.6,
-    });
-
-    return out.choices[0].message.content || "سم؟ وش بغيت؟";
+    return response.data.result.response || "سم؟ وش بغيت؟";
   } catch (err: any) {
-    console.error("HF Error Details:", err);
-    // إذا لسه فيه مشكلة، بيعلمك بالضبط وش هي
-    return `يا كاسبر لسه فيه بلا في السيرفر: ${err.message}`;
+    console.error("Cloudflare Error:", err.response?.data || err.message);
+    return `يا كاسبر فيه مشكلة في السيرفر: ${err.message}`;
   }
 }
