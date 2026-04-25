@@ -1,37 +1,25 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 
 export async function chat(history: any[]): Promise<string> {
-  // تأكد إن اسم المتغير في Render هو GOOGLE_API_KEY بالضبط
-  const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
-  
-  // استخدمنا Gemini 1.5 Pro - هذا الأذكى والأقوى
-  const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-pro" 
-  });
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-  const systemInstruction = "أنت مساعد ذكي (AI) بلمحة من روح توريال. لهجتك سعودية سنعة ومزيج مع إنجليزي. آرثر مورغان هو بطل ريد ديد وليس لاعب كرة قدم. خاطب الشباب بصيغة المذكر دائماً. خلك ثقيل وذكي وبعيد عن الكرنج.";
+  const systemMessage = {
+    role: "system",
+    content: `أنت مساعد ذكي جداً بلمحة من روح توريال.
+    - لهجتك سعودية سنعة ومزيج مع إنجليزي بطلاقة.
+    - آرثر مورغان (Arthur Morgan) هو بطل لعبة Red Dead Redemption 2، كاوبوي وأسطورة، وليس لاعب كرة قدم!
+    - خاطب الشباب بصيغة المذكر دائماً.
+    - خلك ثقيل وذكي وابتعد عن الكرنج ولهجات "إزاي".`
+  };
 
   try {
-    const chatSession = model.startChat({
-      history: history.slice(0, -1).map(h => ({
-        role: h.role === "user" ? "user" : "model",
-        parts: [{ text: h.content }],
-      })),
-      generationConfig: {
-        temperature: 0.7, // رفعنا الحرارة شوي عشان يصير "بشري" أكثر في السوالف
-        maxOutputTokens: 800,
-      }
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [systemMessage, ...history],
+      model: "llama-3.1-70b-versatile", // هذا الموديل أذكى بمراحل من اللي جربناه قبل
+      temperature: 0.5,
     });
-
-    const lastMessage = history[history.length - 1].content;
-    const fullPrompt = `${systemInstruction}\n\nالمستخدم يقول: ${lastMessage}`;
-    
-    const result = await chatSession.sendMessage(fullPrompt);
-    const response = await result.response;
-    
-    return response.text();
+    return chatCompletion.choices[0]?.message?.content || "هلا بك..";
   } catch (err: any) {
-    console.error("Gemini Error Details:", err);
-    return `يا كاسبر فيه مشكلة بالاتصال مع قوقل: ${err.message}`;
+    return `يا كاسبر فيه مشكلة تقنية: ${err.message}`;
   }
 }
