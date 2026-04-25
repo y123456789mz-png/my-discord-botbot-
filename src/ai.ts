@@ -1,8 +1,8 @@
 export async function chat(history: any[]): Promise<string> {
-  // 1. حط مفتاحك الجديد (اللي سويته في New Project) هنا
+  // 1. حط مفتاحك الجديد هنا (تأكد إنه داخل علامات التنصيص وبدون مسافات)
   const apiKey = "AIzaSyAi-Pw8vRyNJ-_h1t2Frj4t8i9JmBhnr5E"; 
   
-  // 2. استخدمنا v1beta (عشان Flash يشتغل) ورابط مباشر جداً
+  // استخدمنا v1beta حصراً لأنه هو اللي يشغل gemini-1.5-flash
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
   try {
@@ -19,18 +19,18 @@ export async function chat(history: any[]): Promise<string> {
 
     const data: any = await response.json();
 
-    // لو طلع خطأ "Key not found" معناها المفتاح فيه مسافة أو ناقص حرف
+    // إذا طلع خطأ، بنعرف سببه بالضبط من قوقل
     if (data.error) {
-      return `يا كاسبر قوقل تقول: ${data.error.message}`;
+      return `يا كاسبر قوقل ردت بـ: ${data.error.message}`;
     }
 
     if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
       return data.candidates[0].content.parts[0].text;
     }
 
-    return "وصل رد بس مافيه نص، جرب تسأل شي ثاني.";
+    return "وصل رد غريب من قوقل، جرب ترسل رسالة ثانية.";
   } catch (err: any) {
-    return `خطأ في الاتصال: ${err.message}`;
+    return `فشل في الاتصال بالسيرفر: ${err.message}`;
   }
 }
 
