@@ -4,14 +4,15 @@ export type ChatMessage = {
 };
 
 export async function chat(history: ChatMessage[]): Promise<string> {
-  // حط مفتاح Google AI Studio هنا
+  // تأكد إن المفتاح يبدأ بـ AIza
   const apiKey = "AIzaSyDNg1dbkerx1WIipn5CILC23L49SHUh8iM"; 
   
-  // استخدمنا gemini-pro لأنه الأكثر استقراراً في الرابط v1
-  const model = "gemini-pro"; 
+  // غيرنا الموديل إلى gemini-1.5-flash (بدون كلمة latest)
+  // وغيرنا الرابط إلى v1beta لأنه هو اللي يدعم Flash حالياً
+  const model = "gemini-1.5-flash"; 
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -25,11 +26,14 @@ export async function chat(history: ChatMessage[]): Promise<string> {
     const data: any = await response.json();
     
     if (data.error) {
-      // لو لسه فيه خطأ، بنجرب نرجع لـ gemini-1.5-flash بس بدون v1beta
-      return `خطأ من قوقل: ${data.error.message}`;
+      return `خطأ من قوقل (${data.error.code}): ${data.error.message}`;
     }
 
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || "وصل رد فاضي من قوقل.";
+    if (data.candidates && data.candidates[0].content) {
+        return data.candidates[0].content.parts[0].text;
+    }
+
+    return "وصل رد من قوقل بس بتنسيق غريب!";
 
   } catch (error: any) {
     return `فشل الاتصال: ${error.message}`;
