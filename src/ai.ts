@@ -1,9 +1,9 @@
 export async function chat(history: any[]): Promise<string> {
-  // 1. حط مفتاحك الجديد هنا (تأكد إنه داخل علامات التنصيص وبدون مسافات)
+  // 1. حط مفتاحك هنا (تأكد إنه جديد)
   const apiKey = "AIzaSyAi-Pw8vRyNJ-_h1t2Frj4t8i9JmBhnr5E"; 
   
-  // استخدمنا v1beta حصراً لأنه هو اللي يشغل gemini-1.5-flash
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  // 2. غيرنا الموديل لـ gemini-pro (هذا يشتغل مع v1beta و v1)
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
 
   try {
     const response = await fetch(url, {
@@ -19,18 +19,17 @@ export async function chat(history: any[]): Promise<string> {
 
     const data: any = await response.json();
 
-    // إذا طلع خطأ، بنعرف سببه بالضبط من قوقل
     if (data.error) {
-      return `يا كاسبر قوقل ردت بـ: ${data.error.message}`;
+      return `يا كاسبر قوقل تقول (خطأ): ${data.error.message}`;
     }
 
     if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
       return data.candidates[0].content.parts[0].text;
     }
 
-    return "وصل رد غريب من قوقل، جرب ترسل رسالة ثانية.";
+    return "رد فاضي، جرب تسأل عن شي ثاني.";
   } catch (err: any) {
-    return `فشل في الاتصال بالسيرفر: ${err.message}`;
+    return `فشل اتصال: ${err.message}`;
   }
 }
 
