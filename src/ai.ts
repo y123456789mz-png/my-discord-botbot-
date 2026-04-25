@@ -1,6 +1,6 @@
 export async function chat(history: any[]): Promise<string> {
   // حط المفتاح اللي توك مطلعه الحين (تأكد إنه يبدأ بـ AIza)
-  const apiKey = "AIzaSyCkruBFCAA2Uu19gEpZMDwScO9MNjy1-i0"; 
+  const apiKey = "AIzaSyAbDMZYRYd9vwUzYBizxyYXwTh1TdWY0Oo"; 
   
   // الرابط الرسمي والمؤكد
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
