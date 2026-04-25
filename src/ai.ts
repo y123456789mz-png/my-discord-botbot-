@@ -4,10 +4,10 @@ export type ChatMessage = {
 };
 
 export async function chat(history: ChatMessage[]): Promise<string> {
-  // حط مفتاحك هنا
+  // المفتاح الجديد حقك
   const apiKey = "AIzaSyDFMkbi2N07xemy9CrOSX4_Om1At32g_HI"; 
   
-  // الرابط هذا هو "السر" اللي يحل مشكلة الـ 404
+  // الرابط المباشر لموديل Flash المستقر
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
   try {
@@ -32,7 +32,7 @@ export async function chat(history: ChatMessage[]): Promise<string> {
         return data.candidates[0].content.parts[0].text;
     }
 
-    return "وصل رد بس بدون نص، جرب ترسل رسالة ثانية.";
+    return "قوقل ردت بس بدون نص، جرب ترسل شي ثاني.";
 
   } catch (error: any) {
     return `فشل الاتصال: ${error.message}`;
