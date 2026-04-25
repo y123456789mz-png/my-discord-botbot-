@@ -4,39 +4,30 @@ export type ChatMessage = {
 };
 
 export async function chat(history: ChatMessage[]): Promise<string> {
-  // حط مفتاح الـ API حقك هنا مباشرة بين علامتي التنصيص
-  const apiKey = "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"; 
-  const model = "mistralai/mistral-7b-instruct:free"; 
+  // حط مفتاح Google AI Studio حقك هنا (اللي يبدأ بـ AIza)
+  const apiKey = "AIzaSyDNg1dbkerx1WIipn5CILC23L49SHUh8iM"; 
+  const model = "gemini-1.5-flash"; 
 
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        "model": model,
-        "messages": [
-          { role: "system", content: "You are a helpful assistant." },
-          ...history
-        ]
+        contents: history.map(msg => ({
+          role: msg.role === "assistant" ? "model" : "user",
+          parts: [{ text: msg.content }]
+        }))
       })
     });
 
     const data: any = await response.json();
-
-    if (data.error) {
-      return `خطأ من السيرفر: ${data.error.message}`;
-    }
-
-    return data.choices?.[0]?.message?.content || "رد فاضي";
-
-  } catch (error: any) {
-    return `فشل في الاتصال: ${error.message}`;
+    if (data.error) return `خطأ من قوقل: ${data.error.message}`;
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "لم يتم استلام رد.";
+  } catch (err: any) {
+    return `فشل الاتصال: ${err.message}`;
   }
 }
 
-export async function voiceChat(wavInput: any, speakerName: string): Promise<any> {
-  return { transcript: "", replyText: "الصوت معطل.", audioWav: Buffer.alloc(0) };
+export async function voiceChat() {
+  return { transcript: "", replyText: "معطل", audioWav: Buffer.alloc(0) };
 }
