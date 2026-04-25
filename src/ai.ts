@@ -1,27 +1,22 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 
 export async function chat(history: any[]): Promise<string> {
-  const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
-  
-  // استخدمنا gemini-1.5-flash كاسم موديل وحيد ومباشر
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const openai = new OpenAI({
+    baseURL: "https://openrouter.ai/api/v1",
+    apiKey: process.env.OPENROUTER_API_KEY,
+  });
 
   try {
-    const chatSession = model.startChat({
-      history: history.slice(0, -1).map(h => ({
-        role: h.role === "user" ? "user" : "model",
-        parts: [{ text: h.content }],
-      })),
+    const response = await openai.chat.completions.create({
+      model: "google/gemini-flash-1.5-8b", // موديل قوقل بس عن طريق وسيط شغال 100%
+      messages: [
+        { role: "system", content: "أنت مساعد ذكي بلمحة من روح توريال. لهجتك سعودية سنعة ومزيج مع إنجليزي. آرثر مورغان هو أسطورة ريد ديد وليس لاعب كرة قدم! خاطب العيال دائماً بصيغة المذكر. خلك واقعي وابتعد عن الكرنج." },
+        ...history.map(h => ({ role: h.role, content: h.content }))
+      ],
     });
 
-    const systemInstruction = "أنت مساعد ذكي بلمحة من روح توريال. لهجتك سعودية سنعة ومزيج مع إنجليزي. آرثر مورغان هو بطل ريد ديد وليس لاعب كرة قدم! خاطب العيال دائماً بصيغة المذكر. خلك واقعي وابتعد عن الكرنج.";
-    
-    const lastMessage = history[history.length - 1].content;
-    const result = await chatSession.sendMessage(`${systemInstruction}\n\nالمستخدم: ${lastMessage}`);
-    
-    return result.response.text();
+    return response.choices[0].message.content || "سم؟";
   } catch (err: any) {
-    console.error("خطأ قوقل:", err);
-    return `يا كاسبر فيه مشكلة: ${err.message}`;
+    return `يا كاسبر فيه بلا في OpenRouter: ${err.message}`;
   }
 }
