@@ -34,4 +34,11 @@ export async function chat(history: any[]): Promise<string> {
         { role: "system", content: systemInstruction },
         ...history.slice(-10) 
       ],
-      temperature:
+      temperature: 0.4,
+    });
+
+    return completion.choices[0]?.message?.content || (isEnglish ? "My apologies, a technical glitch." : "نعتذر، حدث خطأ فني.");
+  } catch (err: any) {
+    return isEnglish ? "Good heavens! A technical hitch." : "تحية طيبة، نعتذر عن وجود عطل فني.";
+  }
+}
