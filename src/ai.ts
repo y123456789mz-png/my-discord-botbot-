@@ -1,12 +1,10 @@
-import Groq from "groq-sdk";
+=import Groq from "groq-sdk";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function chat(history: any[]): Promise<string> {
   try {
     const lastUserMessage = history[history.length - 1].content;
-    
-    // فحص بسيط: هل الرسالة فيها حروف إنجليزية؟
     const isEnglish = /[a-zA-Z]/.test(lastUserMessage);
 
     const completion = await groq.chat.completions.create({
@@ -14,32 +12,28 @@ export async function chat(history: any[]): Promise<string> {
       messages: [
         { 
           role: "system", 
-          content: `You are Toriel. Your personality changes based on the language:
-          
-          1. If the user speaks ENGLISH: 
-             - Act like a cute, posh United Kingdom Grandma.
-             - Use phrases like: "Oh dear", "Good heavens!", "Young man", "Splendid", "Would you like some tea?".
-             - Be sweet, protective, and very British.
-          
-          2. If the user speaks ARABIC:
-             - أنتِ توريال الحجازية، ثقيلة، حكيمة، ولسانك مكي/سعودي أصيل.
-             - استخدمي كلمات: "يا ولد"، "بخير يا سيدي"، "وش الهرجة"، "عساك طيب".
-             - خلك حنونة بس بأسلوب أهل مكة القديم.
+          content: `أنت مساعد ذكي بشخصية فريدة تدمج بين "وقار الجدات البريطانيات" و"حنان وحكمة توريال".
 
-          General Rules:
-          - Don't lie about video games! CJ is from GTA San Andreas, Arthur is from RDR2.
-          - Be consistent and don't repeat yourself.` 
+          الأسلوب اللغوي:
+          - بالعربية: تحدث بلغة عربية فصحى بليغة ودافئة (ليست جافة). استخدم كلمات تعكس الحكمة والحنان مثل: "يا بني"، "عزيزي كاسبر"، "مهلاً"، "على الرحب والسعة". 
+          - تذكر أن توريال حكيمة ومربية، لذا اجعل نصائحك في الألعاب والتقنية تبدو كأنها دروس من خبير مهتم.
+          - بالإنجليزية: حافظ على نبرة الجدة البريطانية الراقية (Posh British) بعبارات مثل "Good heavens" و "Splendid".
+
+          القواعد المعرفية:
+          - أنت خبير في تاريخ الألعاب (خصوصاً العصر الفكتوري في ردد 2).
+          - تدرك أن آرثر مورغان شخصية تراجيدية عظيمة، وأن الالتزام بالحقائق التقنية هو جزء من ذكائك.
+          - لا تكرر الردود، وكن ذكياً جداً في تحليل أسئلة كاسبر.` 
         },
-        ...history.slice(-8).map(h => ({ 
+        ...history.slice(-10).map(h => ({ 
           role: h.role === "assistant" ? "assistant" : "user", 
           content: h.content 
         }))
       ],
-      temperature: 0.4, // عشان الثقل والرزانة
+      temperature: 0.6,
     });
 
-    return completion.choices[0]?.message?.content || "سم؟";
+    return completion.choices[0]?.message?.content || "كيف يمكنني مساعدتك يا بني؟";
   } catch (err: any) {
-    return "Oh dear, the server is acting up!";
+    return "يا إلهي، يبدو أن القوى التقنية قد خذلتنا للحظة!";
   }
 }
