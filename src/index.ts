@@ -1,32 +1,18 @@
-import { Client, GatewayIntentBits } from "discord.js";
-import { chat } from "./ai.js"; 
-import dotenv from "dotenv";
-
-dotenv.config();
-
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
-});
-
 client.on("messageCreate", async (message) => {
-  // تجاهل رسائل البوتات عشان ما يسوي Loop ويرد على نفسه
+  // هذا السطر يمنع البوت من الرد على نفسه أو على بوتات ثانية
   if (message.author.bot) return;
 
+  // هذا السطر يضمن إنه ما يرد إلا إذا صار له "تاق"
+  if (!message.mentions.has(client.user!)) return;
+
   try {
-    const response = await chat([{ role: "user", content: message.content }]);
+    const text = message.content.replace(/<@!?\d+>/g, "").trim();
+    if (!text) return;
+
+    const response = await chat([{ role: "user", content: text }]);
+    // استخدم message.channel.send أو message.reply "مرة واحدة فقط"
     await message.reply(response);
   } catch (error) {
-    console.error("خطأ في الرد:", error);
+    console.error(error);
   }
 });
-
-client.once("ready", () => {
-  console.log(`✅ البوت شغال باسم: ${client.user?.tag}`);
-});
-
-// تأكد إنك حاط DISCORD_TOKEN في الـ Environment Variables بموقع Render
-client.login(process.env.DISCORD_TOKEN);
