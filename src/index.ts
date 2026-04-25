@@ -5,13 +5,11 @@ import { chat } from './ai.js';
 
 dotenv.config();
 
-// --- حل مشكلة البورت في رندر (Render Port Fix) ---
+// سيرفر وهمي لفتح المنفذ (Port) عشان رندر ما يطفي البوت
 const app = express();
 const port = process.env.PORT || 10000;
-app.get('/', (req, res) => res.send('توريال في أتم الاستعداد!'));
-app.listen(port, '0.0.0.0', () => {
-  console.log(`✅ السيرفر الوهمي شغال على بورت: ${port}`);
-});
+app.get('/', (req, res) => res.send('توريال بأفضل حال!'));
+app.listen(port, '0.0.0.0', () => console.log(`✅ السيرفر الوهمي شغال: ${port}`));
 
 const client = new Client({
   intents: [
@@ -23,29 +21,31 @@ const client = new Client({
 });
 
 const memory = new Map<string, any[]>();
-// قفل أمان لمنع الرد المكرر
-const processing = new Set<string>();
+// نظام قفل صارم جداً لمنع التكرار
+const activeMessages = new Set<string>();
 
 client.once('ready', (c) => {
-  console.log(`✅ البوت متصل الآن باسم: ${c.user.tag}`);
+  console.log(`✅ البوت متصل الآن: ${c.user.tag}`);
 });
 
 client.on('messageCreate', async (message) => {
-  // 1. تجاهل رسائل البوتات (أهم شرط لمنع التكرار)
+  // تجاهل البوتات فوراً
   if (message.author.bot) return;
 
   const isMentioned = message.mentions.has(client.user!);
   const isDM = message.guild === null;
 
-  // 2. إذا تم منشنه أو كانت رسالة خاصة، ولم نكن نعالجها حالياً
-  if ((isMentioned || isDM) && !processing.has(message.id)) {
-    processing.add(message.id);
+  // فحص إذا كانت الرسالة قيد المعالجة حالياً لمنع الرد المزدوج
+  if ((isMentioned || isDM) && !activeMessages.has(message.id)) {
+    activeMessages.add(message.id);
 
     try {
       let channelHistory = memory.get(message.channelId) || [];
       channelHistory.push({ role: "user", content: message.content });
 
+      // البدء في كتابة رد (Typing...)
       await message.channel.sendTyping();
+      
       const reply = await chat(channelHistory);
 
       channelHistory.push({ role: "assistant", content: reply });
@@ -54,10 +54,10 @@ client.on('messageCreate', async (message) => {
 
       await message.reply(reply);
     } catch (error) {
-      console.error("خطأ:", error);
+      console.error("خطأ في المعالجة:", error);
     } finally {
-      // إزالة الرسالة من "قائمة المعالجة" بعد فترة بسيطة
-      setTimeout(() => processing.delete(message.id), 10000);
+      // إزالة الرسالة من القفل بعد 10 ثوانٍ لضمان عدم التكرار
+      setTimeout(() => activeMessages.delete(message.id), 10000);
     }
   }
 });
