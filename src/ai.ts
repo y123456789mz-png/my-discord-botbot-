@@ -5,7 +5,7 @@ export type ChatMessage = {
 
 export async function chat(history: ChatMessage[]): Promise<string> {
   // حط مفتاح الـ API حقك هنا مباشرة بين علامتي التنصيص
-  const apiKey = "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"; 
+  const apiKey = "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"; 
   const model = "mistralai/mistral-7b-instruct:free"; 
 
   try {
