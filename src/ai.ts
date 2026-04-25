@@ -4,15 +4,14 @@ export type ChatMessage = {
 };
 
 export async function chat(history: ChatMessage[]): Promise<string> {
-  // تأكد إن المفتاح يبدأ بـ AIza
+  // حط مفتاحك هنا
   const apiKey = "AIzaSyDNg1dbkerx1WIipn5CILC23L49SHUh8iM"; 
   
-  // غيرنا الموديل إلى gemini-1.5-flash (بدون كلمة latest)
-  // وغيرنا الرابط إلى v1beta لأنه هو اللي يدعم Flash حالياً
-  const model = "gemini-1.5-flash"; 
+  // الرابط هذا هو "السر" اللي يحل مشكلة الـ 404
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+    const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -29,11 +28,11 @@ export async function chat(history: ChatMessage[]): Promise<string> {
       return `خطأ من قوقل (${data.error.code}): ${data.error.message}`;
     }
 
-    if (data.candidates && data.candidates[0].content) {
+    if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
         return data.candidates[0].content.parts[0].text;
     }
 
-    return "وصل رد من قوقل بس بتنسيق غريب!";
+    return "وصل رد بس بدون نص، جرب ترسل رسالة ثانية.";
 
   } catch (error: any) {
     return `فشل الاتصال: ${error.message}`;
