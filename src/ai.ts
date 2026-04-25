@@ -1,28 +1,38 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
 export async function chat(history: any[]): Promise<string> {
-  // 1. المفتاح الجديد اللي توك مطلعه حطه هنا
+  // حط المفتاح اللي توك مطلعه الحين (تأكد إنه يبدأ بـ AIza)
   const apiKey = "AIzaSyCkruBFCAA2Uu19gEpZMDwScO9MNjy1-i0"; 
-  const genAI = new GoogleGenerativeAI(apiKey);
+  
+  // الرابط الرسمي والمؤكد
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
   try {
-    // استخدمنا gemini-1.5-flash
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-    const chatSession = model.startChat({
-      history: history.map(msg => ({
-        role: msg.role === "assistant" ? "model" : "user",
-        parts: [{ text: msg.content }],
-      })),
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: history.map(msg => ({
+          role: msg.role === "assistant" ? "model" : "user",
+          parts: [{ text: msg.content }]
+        }))
+      })
     });
 
-    const result = await chatSession.sendMessage(history[history.length - 1].content);
-    const response = await result.response;
-    return response.text();
+    const data: any = await response.json();
 
+    if (data.error) {
+      // لو لسه يقول Expired، جرب تطلع مفتاح "ثاني" الآن وحطه فوراً
+      return `يا كاسبر قوقل تقول: ${data.error.message}`;
+    }
+
+    if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+      return data.candidates[0].content.parts[0].text;
+    }
+
+    return "وصلني رد غريب من قوقل، جرب مرة ثانية.";
   } catch (err: any) {
-    // إذا لسه فيه مشكلة، بيطلع لنا الكود الحقيقي للخطأ هنا
-    return `يا كاسبر فيه مشكلة: ${err.message}`;
+    return `فشل الاتصال: ${err.message}`;
   }
 }
 
