@@ -1,13 +1,7 @@
-export type ChatMessage = {
-  role: "system" | "user" | "assistant";
-  content: string;
-};
-
-export async function chat(history: ChatMessage[]): Promise<string> {
-  // 1. روح طلع مفتاح جديد تماماً "Fresh" وحطه هنا
-  const apiKey = "AIzaSyDFMkbi2N07xemy9CrOSX4_Om1At32g_HI"; 
-
-  // سنحاول استخدام الموديل gemini-1.5-flash برابط v1beta (الأكثر شيوعاً)
+export async function chat(history: any[]): Promise<string> {
+  const apiKey = "AIzaSyCkruBFCAA2Uu19gEpZMDwScO9MNjy1-i0"; 
+  
+  // الرابط الرسمي والمباشر لموديل Flash
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
   try {
@@ -25,21 +19,11 @@ export async function chat(history: ChatMessage[]): Promise<string> {
     const data: any = await response.json();
 
     if (data.error) {
-      // لو المفتاح خربان، بيعلمنا هنا بوضوح
-      return `خطأ تقني (${data.error.code}): ${data.error.message}`;
+      return `خطأ مباشر من قوقل (${data.error.code}): ${data.error.message}`;
     }
 
-    if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-      return data.candidates[0].content.parts[0].text;
-    }
-
-    return "رد غير مفهوم من السيرفر.";
-
-  } catch (error: any) {
-    return `فشل الاتصال بالخادم: ${error.message}`;
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "رد فاضي، جرب مرة ثانية.";
+  } catch (err: any) {
+    return `فشل الاتصال: ${err.message}`;
   }
-}
-
-export async function voiceChat() {
-  return { transcript: "", replyText: "معطل", audioWav: Buffer.alloc(0) };
 }
