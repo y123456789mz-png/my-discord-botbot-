@@ -1,7 +1,6 @@
 import { HfInference } from "@huggingface/inference";
 
 export async function chat(history: any[]): Promise<string> {
-  // تأكد إن الاسم في رندر هو HF_TOKEN
   const hf = new HfInference(process.env.HF_TOKEN);
 
   try {
@@ -16,7 +15,8 @@ export async function chat(history: any[]): Promise<string> {
     ];
 
     const out = await hf.chatCompletion({
-      model: "Qwen/Qwen2.5-72B-Instruct",
+      // الموديل هذا خفيف ومستقر جداً في الـ API المجاني
+      model: "mistralai/Mistral-7B-Instruct-v0.3",
       messages: messages,
       max_tokens: 500,
       temperature: 0.5,
@@ -24,6 +24,7 @@ export async function chat(history: any[]): Promise<string> {
 
     return out.choices[0].message.content || "سم؟";
   } catch (err: any) {
+    console.error("HF Error:", err);
     return `يا كاسبر فيه بلا في Hugging Face: ${err.message}`;
   }
 }
