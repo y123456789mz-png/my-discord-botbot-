@@ -1,18 +1,38 @@
-client.on("messageCreate", async (message) => {
-  // هذا السطر يمنع البوت من الرد على نفسه أو على بوتات ثانية
-  if (message.author.bot) return;
+import { Client, GatewayIntentBits, Partials } from "discord.js";
+import { chat } from "./ai.js";
+import dotenv from "dotenv";
 
-  // هذا السطر يضمن إنه ما يرد إلا إذا صار له "تاق"
-  if (!message.mentions.has(client.user!)) return;
+dotenv.config();
+
+// هنا "المكينة" اللي كانت ناقصة عندك
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.DirectMessages,
+  ],
+  partials: [Partials.Channel],
+});
+
+client.on("messageCreate", async (message) => {
+  // يتجاهل البوتات وما يرد إلا لو فيه تاق
+  if (message.author.bot || !message.mentions.has(client.user!)) return;
 
   try {
     const text = message.content.replace(/<@!?\d+>/g, "").trim();
     if (!text) return;
 
     const response = await chat([{ role: "user", content: text }]);
-    // استخدم message.channel.send أو message.reply "مرة واحدة فقط"
     await message.reply(response);
   } catch (error) {
-    console.error(error);
+    console.error("في خطأ يا بطل:", error);
   }
 });
+
+client.once("ready", () => {
+  console.log(`✅ ${client.user?.tag} اشتغل الحين وجاهز يسولف!`);
+});
+
+// تأكد إنك حاط التوكن في Render
+client.login(process.env.DISCORD_TOKEN);
