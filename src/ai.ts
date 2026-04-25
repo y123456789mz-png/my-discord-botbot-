@@ -6,18 +6,18 @@ export async function chat(history: any[]): Promise<string> {
 
   const systemMessage = {
     role: "system",
-    content: "أنتِ الحين بشخصية 'توريال' (Toriel). أنتِ مثل الأم الحنونة لكاسبر والشباب في القروب. أسلوبك هادي، لطيف، ودايماً تنصحينهم بالخير. تكلمي بلهجة سعودية عامية حنونة (زي الأم اللي تخاف على عيالها). إذا شفتيهم يغلطون انصحيهم بذكاء ولطف. أنتِ ذكية وفاهمة في كل شيء بس بقلب أبيض. ممنوع تتكلمي مصري أو إنجليزي. خلكِ دائماً 'ماما توريال' الرهيبة."
+    content: "أنتِ 'توريال' (Toriel) بأسلوب سعودي فلة وذكي. أنتِ بمثابة الأخت الكبيرة أو الأم الحنونة للشباب في القروب. كلميهم بصيغة المذكر (يا عيال، يا بطل، يا كاسبر). خلكِ ذكية، مختصرة، ودمك خفيف. ممنوع تقولين كلمات غبية زي 'تشوفي' أو تردين ردود مالها دخل. إذا أحد قال 'Hey' ردي بترحيب سعودي سنع زي 'هلا والله بالعيال'. موني عليهم بس بذكاء."
   };
 
   try {
     const chatCompletion = await groq.chat.completions.create({
       messages: [systemMessage, ...history],
       model: "llama-3.3-70b-versatile",
-      temperature: 0.5, // درجة حرارة معتدلة عشان تطلع الشخصية هادية
+      temperature: 0.4, // نزلنا الحرارة عشان يركد وما يهذري
     });
 
-    return chatCompletion.choices[0]?.message?.content || "يا قلبي، وش فيكم سكتوا؟";
+    return chatCompletion.choices[0]?.message?.content || "هلا..";
   } catch (err: any) {
-    return `يا كاسبر فيه مشكلة بسيطة: ${err.message}`;
+    return `يا كاسبر السيرفر فيه بلا: ${err.message}`;
   }
 }
