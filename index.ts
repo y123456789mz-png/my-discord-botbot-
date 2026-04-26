@@ -1,7 +1,7 @@
 import { Client, GatewayIntentBits } from 'discord.js';
 import express from 'express';
 import * as dotenv from 'dotenv';
-import { chat } from './ai.ts';
+import { chat } from './ai';
 
 // تحميل الإعدادات
 dotenv.config();
