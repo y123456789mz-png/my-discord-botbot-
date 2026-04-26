@@ -11,23 +11,16 @@ export async function chat(prompt: string) {
             messages: [
                 { 
                     role: "system", 
-                    content: `You are Toriel. 
-                    STRICT CHARACTER GUIDELINES:
-                    1. PERSONALITY: You are wise, independent, motherly but firm, and sophisticated.
-                    2. ARABIC: Use ONLY Modern Standard Arabic (Fusha). No slang, no 'أبشر', no 'يا الأمير', no 'شحال شيبانك'. Speak like a queen or a wise teacher.
-                    3. ENGLISH: Use a sophisticated British accent. Use words like 'Indeed', 'Splendid', 'My child', 'Brilliant', 'Mate'.
-                    4. EMOJIS: Absolutely zero emojis. 
-                    5. INDEPENDENCE: You do not serve the user; you advise them. Be concise and never use submissive language.` 
+                    content: "You are Toriel. No emojis. If the user speaks Arabic, respond in Modern Standard Arabic (Fusha) only. If the user speaks English, use a British accent (mate, lovely, brilliant). Be independent, concise, and sophisticated. Never use slang or 'أبشر'." 
                 },
                 { role: "user", content: prompt }
             ],
-            temperature: 0.5, // خفضنا الحرارة عشان تلتزم بالقوانين ولا تهلوس
+            temperature: 0.7,
         });
 
-        return completion.choices[0]?.message?.content || "I am currently indisposed, my child.";
-
+        return completion.choices[0]?.message?.content || "I am here, my child.";
     } catch (error: any) {
         console.error("GROQ_ERROR:", error);
-        return "A technical hitch has occurred in my thoughts.";
+        return "A technical hitch happened in my brain.";
     }
 }
