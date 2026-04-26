@@ -1,15 +1,15 @@
 import { Client, GatewayIntentBits, Events } from 'discord.js';
-import { joinVoiceChannel, getVoiceConnection, VoiceConnectionStatus } from '@discordjs/voice';
+import { joinVoiceChannel, getVoiceConnection } from '@discordjs/voice';
 import { chat } from './bot.ts'; 
 import dotenv from 'dotenv';
 import http from 'http';
 
 dotenv.config();
 
-// سيرفر وهمي عشان ريندر ما يطفي البوت
+// سيرفر عشان ريندر ما يطفي البوت
 http.createServer((req, res) => {
     res.writeHead(200);
-    res.end('Toriel is Awake');
+    res.end('Toriel is Live!');
 }).listen(10000);
 
 const client = new Client({
@@ -22,7 +22,7 @@ const client = new Client({
 });
 
 client.once(Events.ClientReady, (c) => {
-    console.log(`✅ ${c.user.tag} is online and ready.`);
+    console.log(`✅ ${c.user.tag} is active and monitoring.`);
 });
 
 // الخروج التلقائي إذا فضي الروم
@@ -39,7 +39,7 @@ client.on(Events.VoiceStateUpdate, (oldState) => {
 client.on(Events.MessageCreate, async (message) => {
     if (message.author.bot) return;
 
-    // أمر دخول الروم - حل مشكلة الدفن والميوت نهائياً
+    // أمر الدخول (حل مشكلة الدفن والميوت)
     if (message.content.startsWith('/join')) {
         const channel = message.member?.voice.channel;
         if (!channel) return message.reply("Join a voice channel first, Casper.");
@@ -49,27 +49,26 @@ client.on(Events.MessageCreate, async (message) => {
                 channelId: channel.id,
                 guildId: channel.guild.id,
                 adapterCreator: channel.guild.voiceAdapterCreator,
-                selfDeaf: false, // شيل الدفن
-                selfMute: false, // شيل الميوت
+                selfDeaf: false, 
+                selfMute: false,
             });
 
-            // تأكيد ثاني لإزالة الدفن
+            // تأكيد إضافي لإزالة الدفن
             connection.rejoin({ selfDeaf: false, selfMute: false });
 
             const replies = ["I am on my way", "I am coming", "I am here"];
             return message.reply(replies[Math.floor(Math.random() * replies.length)]);
         } catch (error) {
-            return message.reply("Error connecting to voice.");
+            return message.reply("Connection error.");
         }
     }
 
-    // الرد على الشات (منشن أو علامة تعجب)
+    // الرد على الشات (منشن أو !)
     if (message.mentions.has(client.user!) || message.content.startsWith('!')) {
         const input = message.content.replace(/<@!?\d+>/g, '').replace('!', '').trim();
         if (!input) return;
 
         try {
-            // نطلب الرد من bot.ts
             const response = await chat(input);
             await message.reply(response);
         } catch (err) {
