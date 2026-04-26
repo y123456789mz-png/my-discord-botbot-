@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: my-discord-bot
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npx tsx src/index.ts
+    envVars:
+      - key: NODE_VERSION
+        value: 22.14.0
+    buildpacks:
+      - url: https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest.git
+      - url: render/node
