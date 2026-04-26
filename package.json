@@ -1,11 +1,9 @@
 {
   "name": "toriel-bot",
   "version": "1.0.0",
-  "description": "Toriel bot for Casper",
-  "main": "src/index.ts",
+  "type": "module",
   "scripts": {
-    "start": "npx tsx src/index.ts",
-    "build": "pnpm install"
+    "start": "npx tsx src/index.ts"
   },
   "dependencies": {
     "discord.js": "^14.16.3",
