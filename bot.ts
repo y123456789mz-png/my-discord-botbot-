@@ -2,38 +2,38 @@ import Groq from "groq-sdk";
 import dotenv from 'dotenv';
 dotenv.config();
 
-// محاولة جلب المفتاح بأكثر من طريقة للتأكد
-const apiKey = process.env.GROQ_API_KEY;
+// نتحقق من وجود المفتاح أول ما يشتغل البوت
+if (!process.env.GROQ_API_KEY) {
+    console.error("❌ MISSING GROQ_API_KEY IN RENDER ENVIRONMENT VARIABLES");
+}
 
-const groq = new Groq({ 
-    apiKey: apiKey 
-});
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function chat(prompt: string) {
     try {
-        // استخدمنا موديل Mixtral لأنه أسرع وأقل مشاكل في الاتصال
         const completion = await groq.chat.completions.create({
-            model: "mixtral-8x7b-32768", 
+            // هذا الموديل مستقر جداً وسريع
+            model: "gemma2-9b-it", 
             messages: [
                 { 
                     role: "system", 
-                    content: "Your name is Toriel. No emojis. Arabic = Modern Standard Arabic (Fusha). English = British accent. Concise. Never use 'أبشر'." 
+                    content: "Your name is Toriel. Strict rules: No emojis. If the user speaks Arabic, respond in Modern Standard Arabic (Fusha) only. If English, use a British accent (mate, brilliant). Concise only." 
                 },
                 { role: "user", content: prompt }
             ],
             temperature: 0.5,
+            max_tokens: 500,
         });
 
-        return completion.choices[0]?.message?.content || "I am silent, mate.";
+        const reply = completion.choices[0]?.message?.content;
+        return reply || "I am speechless, mate.";
 
     } catch (error: any) {
-        // طباعة الخطأ في الـ Logs حق ريندر عشان لو فشل نعرف ليه
-        console.error("DETAILED_ERROR:", error.message);
+        // بنطبع الخطأ الحقيقي في الـ Logs حق ريندر عشان لو خربت نعرف السبب
+        console.error("GROQ_RAW_ERROR:", error.message);
         
-        // إذا كان الخطأ بسبب المفتاح
-        if (error.message.includes("401")) return "Wrong API Key, mate.";
-        // إذا كان بسبب الموديل
-        if (error.message.includes("404")) return "Model not found.";
+        // إذا كان المفتاح غلط بيعطيك هذا الرد
+        if (error.status === 401) return "Wrong API Key, mate. Check your Render settings.";
         
         return "A technical hitch happened in my brain.";
     }
