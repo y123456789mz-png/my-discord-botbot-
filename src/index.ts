@@ -7,7 +7,7 @@ import { chat } from './ai.js';
 dotenv.config();
 
 const app = express();
-app.get('/', (req, res) => res.send('Toriel is Living! ✨'));
+app.get('/', (req, res) => res.send('Toriel is finally awake! ✨'));
 app.listen(process.env.PORT || 10000, '0.0.0.0');
 
 const client = new Client({
@@ -22,7 +22,7 @@ const client = new Client({
 let isInVoice = false;
 
 client.once('ready', () => {
-    console.log(`✅ ${client.user?.tag} is online!`);
+    console.log(`✅ ${client.user?.tag} IS ONLINE!`);
 });
 
 client.on('messageCreate', async (message) => {
@@ -35,10 +35,9 @@ client.on('messageCreate', async (message) => {
         channelId: channel.id,
         guildId: channel.guild.id,
         adapterCreator: channel.guild.voiceAdapterCreator as any,
-        selfDeaf: false,
       });
       isInVoice = true;
-      return message.reply("أبشر! ✨");
+      return message.reply("توريال انضمت للروم! ✨");
     }
   }
 
@@ -54,7 +53,7 @@ client.on('messageCreate', async (message) => {
           const reply = await chat([{ role: "user", content: message.content }]);
           await message.reply(reply);
       } catch (err) {
-          console.error(err);
+          console.error("AI Error:", err);
       }
   }
 });
