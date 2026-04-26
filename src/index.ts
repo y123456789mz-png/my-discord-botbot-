@@ -1,73 +1,39 @@
-import { Client, GatewayIntentBits } from 'discord.js';
-import express from 'express';
-import * as dotenv from 'dotenv';
-import { joinVoiceChannel, getVoiceConnection } from '@discordjs/voice';
-// غيرنا ./ai.js إلى المسار الفعلي من المجلد الرئيسي
-import { chat } from './ai.js'; 
+import Groq from "groq-sdk";
 
-dotenv.config();
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-const app = express();
-app.get('/', (req, res) => res.send('Toriel is Live!'));
-app.listen(process.env.PORT || 10000, '0.0.0.0');
+export async function chat(history: any[]): Promise<string> {
+  let isEnglish = false; 
+  try {
+    const lastUserMessage = history[history.length - 1].content;
+    isEnglish = /[a-zA-Z]/.test(lastUserMessage);
 
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildVoiceStates,
-  ],
-});
+    const systemInstruction = isEnglish 
+      ? `You are Toriel, a female AI created by Casper__1. 
+         - Use ONLY English or Arabic. 
+         - Personality: Independent, sophisticated, and polite.`
+      : `أنتِ "توريال"، مساعدة ذكية (أنثى) ومبدعكِ هو Casper__1.
 
-let isInVoice = false;
+         ⚠️ قواعد صارمة:
+         1. استخدمي العربية الفصحى فقط. 
+         2. يمنع استخدام حروف من لغات أخرى (مثل الهندية أو الأردية).
 
-client.once('ready', () => console.log(`✅ ${client.user?.tag} IS ONLINE`));
+         🎭 الهوية:
+         - أنتِ أنثى مستقلة بآراء تقنية واضحة.
+         - الفضل في وجودك يعود لـ Casper__1.`;
 
-client.on('voiceStateUpdate', (oldState, newState) => {
-    const connection = getVoiceConnection(oldState.guild.id);
-    if (connection) {
-        const channelId = connection.joinConfig.channelId;
-        const channel = oldState.guild.channels.cache.get(channelId!) as any;
-        if (channel && channel.members.size <= 1) {
-            connection.destroy();
-            isInVoice = false;
-        }
-    }
-});
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile", 
+      messages: [
+        { role: "system", content: systemInstruction },
+        ...history.slice(-10) 
+      ],
+      temperature: 0.3,
+    });
 
-client.on('messageCreate', async (message) => {
-  if (message.author.bot) return;
-
-  if (message.content === '/join') {
-    const channel = message.member?.voice.channel;
-    if (channel) {
-      joinVoiceChannel({
-        channelId: channel.id,
-        guildId: channel.guild.id,
-        adapterCreator: channel.guild.voiceAdapterCreator as any,
-      });
-      isInVoice = true;
-      return message.reply("أبشر! ✨");
-    }
+    return completion.choices[0]?.message?.content || "أهلاً بك، كيف يمكنني مساعدتك؟";
+  } catch (err: any) {
+    console.error("AI Error:", err);
+    return isEnglish ? "A technical hitch!" : "أهلاً بك، نعتذر عن وجود عطل فني.";
   }
-
-  if (message.content === '/leave') {
-    getVoiceConnection(message.guildId!)?.destroy();
-    isInVoice = false;
-    return message.reply("في أمان الله! 👋");
-  }
-
-  if (message.mentions.has(client.user!) || message.guild === null) {
-      await message.channel.sendTyping();
-      const voiceNote = isInVoice ? "(Note: You are in a voice channel)" : "";
-      try {
-          const reply = await chat([{ role: "user", content: voiceNote + message.content }]);
-          await message.reply(reply);
-      } catch (err) {
-          console.error(err);
-      }
-  }
-});
-
-client.login(process.env.DISCORD_TOKEN);
+}
