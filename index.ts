@@ -6,10 +6,9 @@ import http from 'http';
 
 dotenv.config();
 
-// سيرفر عشان ريندر ما يطفي البوت
 http.createServer((req, res) => {
     res.writeHead(200);
-    res.end('Toriel is Live!');
+    res.end('Toriel is Live');
 }).listen(10000);
 
 const client = new Client({
@@ -22,10 +21,9 @@ const client = new Client({
 });
 
 client.once(Events.ClientReady, (c) => {
-    console.log(`✅ ${c.user.tag} is active and monitoring.`);
+    console.log(`✅ ${c.user.tag} is awake.`);
 });
 
-// الخروج التلقائي إذا فضي الروم
 client.on(Events.VoiceStateUpdate, (oldState) => {
     const connection = getVoiceConnection(oldState.guild.id);
     if (connection) {
@@ -39,10 +37,9 @@ client.on(Events.VoiceStateUpdate, (oldState) => {
 client.on(Events.MessageCreate, async (message) => {
     if (message.author.bot) return;
 
-    // أمر الدخول (حل مشكلة الدفن والميوت)
     if (message.content.startsWith('/join')) {
         const channel = message.member?.voice.channel;
-        if (!channel) return message.reply("Join a voice channel first, Casper.");
+        if (!channel) return message.reply("Please join a voice channel first.");
 
         try {
             const connection = joinVoiceChannel({
@@ -52,18 +49,13 @@ client.on(Events.MessageCreate, async (message) => {
                 selfDeaf: false, 
                 selfMute: false,
             });
-
-            // تأكيد إضافي لإزالة الدفن
             connection.rejoin({ selfDeaf: false, selfMute: false });
-
-            const replies = ["I am on my way", "I am coming", "I am here"];
-            return message.reply(replies[Math.floor(Math.random() * replies.length)]);
+            return message.reply("I shall join you shortly.");
         } catch (error) {
-            return message.reply("Connection error.");
+            return message.reply("A connection difficulty has arisen.");
         }
     }
 
-    // الرد على الشات (منشن أو !)
     if (message.mentions.has(client.user!) || message.content.startsWith('!')) {
         const input = message.content.replace(/<@!?\d+>/g, '').replace('!', '').trim();
         if (!input) return;
@@ -72,7 +64,7 @@ client.on(Events.MessageCreate, async (message) => {
             const response = await chat(input);
             await message.reply(response);
         } catch (err) {
-            await message.reply("A technical hitch!");
+            await message.reply("My apologies, a technical hitch occurred.");
         }
     }
 });
