@@ -1,6 +1,6 @@
 import { Client, GatewayIntentBits } from 'discord.js';
-import { joinVoiceChannel } from '@discordjs/voice';
-import { chat } from './bot.ts'; // تأكد إن الاسم كذا بالضبط عندك
+import { joinVoiceChannel, getVoiceConnection } from '@discordjs/voice';
+import { chat } from './bot.ts'; 
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -10,50 +10,62 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildVoiceStates, // ضروري عشان الصوت
+        GatewayIntentBits.GuildVoiceStates,
     ],
 });
 
 client.once('ready', () => {
-    console.log(`✅ ${client.user?.tag} اشتغل ودخل الخدمة!`);
+    console.log(`✅ ${client.user?.tag} is active.`);
+});
+
+// ميزة الخروج التلقائي إذا فضي الروم
+client.on('voiceStateUpdate', (oldState) => {
+    const connection = getVoiceConnection(oldState.guild.id);
+    if (connection) {
+        const channel = oldState.channel;
+        if (channel && channel.members.filter(m => !m.user.bot).size === 0) {
+            connection.destroy();
+            console.log("Room is empty, leaving...");
+        }
+    }
 });
 
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
-    // أمر دخول الروم الصوتي
     if (message.content.startsWith('/join')) {
         const member = message.member;
         const channel = member?.voice.channel;
 
-        if (!channel) {
-            return message.reply('يا كاسبر ادخل روم أول عشان ألحقك! 🏃‍♂️');
-        }
+        if (!channel) return message.reply("Join a voice channel first, Casper.");
 
-        try {
-            joinVoiceChannel({
-                channelId: channel.id,
-                guildId: channel.guild.id,
-                adapterCreator: channel.guild.voiceAdapterCreator,
-            });
-            return message.reply(`✅ أبشر، دخلت روم ${channel.name}!`);
-        } catch (error) {
-            console.error(error);
-            return message.reply('صار عندي مغص وما قدرت أدخل الروم.. شيك على الـ Logs!');
-        }
+        joinVoiceChannel({
+            channelId: channel.id,
+            guildId: channel.guild.id,
+            adapterCreator: channel.guild.voiceAdapterCreator,
+        });
+
+        const replies = ["I am on my way", "I am coming", "I am here"];
+        return message.reply(replies[Math.floor(Math.random() * replies.length)]);
     }
 
-    // نظام الدردشة الذكي اللي ضبطناه
     if (message.content.startsWith('!')) {
         const prompt = message.content.slice(1).trim();
         if (!prompt) return;
 
         try {
-            const response = await chat(prompt);
+            // توجيه الشخصية داخل الـ Prompt بدون تعقيد عشان ما تهلوس
+            const systemInstruction = `
+            You are Toriel. 
+            - If the user speaks Arabic, respond ONLY in Modern Standard Arabic (Fusha).
+            - If the user speaks English, respond ONLY in English with a subtle British accent and vocabulary (e.g., use 'bloody', 'mate', 'brilliant' occasionally).
+            - Stay independent and concise. No emojis.`;
+            
+            const finalPrompt = `${systemInstruction}\n\nUser: ${prompt}`;
+            const response = await chat(finalPrompt);
             await message.reply(response);
         } catch (err) {
-            console.error(err);
-            await message.reply('والله ياهو معلق مخي شوي.. جرب تسألني بعدين.');
+            await message.reply("System error.");
         }
     }
 });
