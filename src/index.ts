@@ -4,8 +4,7 @@ import * as dotenv from 'dotenv';
 import { joinVoiceChannel, getVoiceConnection } from '@discordjs/voice';
 import { chat } from './ai.js'; 
 
-// التعديل هنا: علّمنا البوت إن ملف الـ env موجود في المجلد اللي فوقه
-dotenv.config({ path: '../.env' });
+dotenv.config();
 
 const app = express();
 app.get('/', (req, res) => res.send('Toriel is Living! ✨'));
@@ -23,19 +22,7 @@ const client = new Client({
 let isInVoice = false;
 
 client.once('ready', () => {
-    console.log(`✅ ${client.user?.tag} is online and ready!`);
-});
-
-client.on('voiceStateUpdate', (oldState, newState) => {
-    const connection = getVoiceConnection(oldState.guild.id);
-    if (connection) {
-        const channelId = connection.joinConfig.channelId;
-        const channel = oldState.guild.channels.cache.get(channelId!) as any;
-        if (channel && channel.members.size <= 1) {
-            connection.destroy();
-            isInVoice = false;
-        }
-    }
+    console.log(`✅ ${client.user?.tag} is online!`);
 });
 
 client.on('messageCreate', async (message) => {
@@ -51,24 +38,23 @@ client.on('messageCreate', async (message) => {
         selfDeaf: false,
       });
       isInVoice = true;
-      return message.reply("أبشر! دخلت الروم. ✨");
+      return message.reply("أبشر! ✨");
     }
   }
 
   if (message.content === '/leave') {
     getVoiceConnection(message.guildId!)?.destroy();
     isInVoice = false;
-    return message.reply("في أمان الله! 👋");
+    return message.reply("مع السلامة! 👋");
   }
 
   if (message.mentions.has(client.user!) || message.guild === null) {
       await message.channel.sendTyping();
-      const voiceContext = isInVoice ? "[System Note: You are in a voice channel now]" : "";
       try {
-          const reply = await chat([{ role: "user", content: voiceContext + message.content }]);
+          const reply = await chat([{ role: "user", content: message.content }]);
           await message.reply(reply);
       } catch (err) {
-          console.error("Chat Error:", err);
+          console.error(err);
       }
   }
 });
