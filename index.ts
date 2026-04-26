@@ -21,10 +21,9 @@ const client = new Client({
 });
 
 client.once(Events.ClientReady, (c) => {
-    console.log(`✅ ${c.user.tag} is online and listening.`);
+    console.log(`✅ ${c.user.tag} is online.`);
 });
 
-// الخروج التلقائي
 client.on(Events.VoiceStateUpdate, (oldState) => {
     const connection = getVoiceConnection(oldState.guild.id);
     if (connection) {
@@ -38,7 +37,7 @@ client.on(Events.VoiceStateUpdate, (oldState) => {
 client.on(Events.MessageCreate, async (message) => {
     if (message.author.bot) return;
 
-    // أمر الدخول - مع تشديد على إزالة الدفن والميوت
+    // أمر دخول الروم
     if (message.content.startsWith('/join')) {
         const member = message.member;
         const channel = member?.voice.channel;
@@ -46,16 +45,13 @@ client.on(Events.MessageCreate, async (message) => {
         if (!channel) return message.reply("Join a voice channel first, Casper.");
 
         try {
-            const connection = joinVoiceChannel({
+            joinVoiceChannel({
                 channelId: channel.id,
                 guildId: channel.guild.id,
                 adapterCreator: channel.guild.voiceAdapterCreator,
                 selfDeaf: false, 
                 selfMute: false,
             });
-
-            // تأكيد إضافي لإزالة الدفن
-            connection.rejoin({ selfDeaf: false, selfMute: false });
 
             const replies = ["I am on my way", "I am coming", "I am here"];
             return message.reply(replies[Math.floor(Math.random() * replies.length)]);
@@ -64,26 +60,18 @@ client.on(Events.MessageCreate, async (message) => {
         }
     }
 
-    // الرد على الشات (إذا فيه منشن للبوت أو بدأ بـ !)
+    // الرد على الشات
     if (message.mentions.has(client.user!) || message.content.startsWith('!')) {
-        // تنظيف الرسالة من المنشن عشان ما يروح للذكاء الاصطناعي ويخرب عليه
-        const prompt = message.content.replace(/<@!?\d+>/g, '').replace('!', '').trim();
-        
-        if (!prompt) return;
+        const userInput = message.content.replace(/<@!?\d+>/g, '').replace('!', '').trim();
+        if (!userInput) return;
 
         try {
-            const systemInstruction = `
-            Your name is Toriel. Strict rules:
-            1. Never use emojis.
-            2. If the user speaks Arabic, respond ONLY in Modern Standard Arabic (Fusha).
-            3. If the user speaks English, respond ONLY in English with a British accent (mate, brilliant, lovely).
-            4. Never say 'أبشر'. 
-            5. Be sophisticated and concise.`;
-            
-            const response = await chat(`${systemInstruction}\n\nUser: ${prompt}`);
+            // أرسل النص مباشرة لملف bot.ts وخلي bot.ts هو اللي يتعامل مع الشخصية
+            const response = await chat(userInput);
             await message.reply(response);
         } catch (err) {
-            await message.reply("System error.");
+            console.error(err);
+            await message.reply("A technical hitch!");
         }
     }
 });
