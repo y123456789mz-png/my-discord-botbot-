@@ -2,12 +2,12 @@ import { Client, GatewayIntentBits, Partials } from 'discord.js';
 import express from 'express';
 import dotenv from 'dotenv';
 import { chat } from './ai.js';
-// المكتبات الجديدة للصوت
 import { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus } from '@discordjs/voice';
 import * as googleTTS from 'google-tts-api';
 
 dotenv.config();
 
+// --- خادم الويب للحفاظ على نشاط البوت في ريندر ---
 const app = express();
 const port = process.env.PORT || 10000;
 
@@ -17,12 +17,13 @@ app.listen(port, '0.0.0.0', () => {
   console.log(`✅ الخادم الوهمي نشط على المنفذ: ${port}`);
 });
 
+// --- إعداد العميل مع صلاحيات الصوت والرسائل ---
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildVoiceStates, // ضروري جداً للدخول للرومات الصوتية
+    GatewayIntentBits.GuildVoiceStates, // ضروري للصوت
   ],
   partials: [Partials.Channel],
 });
@@ -40,35 +41,43 @@ client.on('messageCreate', async (message) => {
   // --- قسم الأوامر الصوتية (!speak) ---
   if (message.content.startsWith('!speak')) {
     const channel = message.member?.voice.channel;
+    
     if (channel) {
+      // استخراج النص بعد كلمة !speak
       const textToSay = message.content.replace('!speak', '').trim() || "أهلاً بك يا كاسبر، أنا توريال";
       
-      const connection = joinVoiceChannel({
-        channelId: channel.id,
-        guildId: channel.guild.id,
-        adapterCreator: channel.guild.voiceAdapterCreator as any,
-      });
+      try {
+        const connection = joinVoiceChannel({
+          channelId: channel.id,
+          guildId: channel.guild.id,
+          adapterCreator: channel.guild.voiceAdapterCreator as any,
+        });
 
-      const url = googleTTS.getAudioUrl(textToSay, {
-        lang: 'ar',
-        slow: false,
-        host: 'https://translate.google.com',
-      });
+        const url = googleTTS.getAudioUrl(textToSay, {
+          lang: 'ar',
+          slow: false,
+          host: 'https://translate.google.com',
+        });
 
-      const player = createAudioPlayer();
-      const resource = createAudioResource(url);
-      
-      player.play(resource);
-      connection.subscribe(player);
-      await message.reply("أبشر، دخلت الروم وقاعد أتكلم! 🎙️✨");
-      return; // عشان ما يكمل ويروح للذكاء الاصطناعي
+        const player = createAudioPlayer();
+        const resource = createAudioResource(url);
+        
+        player.play(resource);
+        connection.subscribe(player);
+        
+        await message.reply("أبشر، أنا في الروم الآن وقاعدة أتكلم! 🎙️✨");
+      } catch (error) {
+        console.error("فشل في تشغيل الصوت:", error);
+        await message.reply("حصلت مشكلة وأنا أحاول أتكلم، تأكد إني عندي صلاحيات في الروم.");
+      }
+      return; 
     } else {
-      await message.reply("ادخل روم صوتي أول يا وحش!");
+      await message.reply("ادخل روم صوتي أول يا وحش عشان أجيك!");
       return;
     }
   }
 
-  // --- قسم الذكاء الاصطناعي (كودك الأصلي) ---
+  // --- قسم الذكاء الاصطناعي (ردود توريال العادية) ---
   const isMentioned = message.mentions.has(client.user!);
   const isDM = message.guild === null;
 
@@ -87,7 +96,7 @@ client.on('messageCreate', async (message) => {
 
       await message.reply(reply);
     } catch (e) {
-      console.error(e);
+      console.error("خطأ في معالجة الذكاء الاصطناعي:", e);
     } finally {
       setTimeout(() => processing.delete(message.id), 15000);
     }
