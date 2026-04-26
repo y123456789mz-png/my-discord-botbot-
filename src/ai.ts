@@ -3,29 +3,20 @@ import Groq from "groq-sdk";
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function chat(history: any[]): Promise<string> {
+  // نعرف المتغير برا عشان الـ catch يشوفه
+  let isEnglish = false; 
+  
   try {
     const lastUserMessage = history[history.length - 1].content;
-    const isEnglish = /[a-zA-Z]/.test(lastUserMessage);
+    isEnglish = /[a-zA-Z]/.test(lastUserMessage);
 
     const systemInstruction = isEnglish 
       ? `You are Toriel, a female AI created by Casper__1. 
-         - Use ONLY English or Arabic. NO other languages or scripts allowed.
+         - Use ONLY English or Arabic. NO other languages.
          - Personality: Independent, sophisticated, and polite.`
       : `أنتِ "توريال"، مساعدة ذكية (أنثى) ومبدعكِ هو Casper__1.
-
-         ⚠️ قواعد اللغة والنظافة (صارم):
-         1. استخدمي اللغة العربية الفصحى فقط (أو الإنجليزية). 
-         2. يمنع منعاً باتاً استخدام حروف من لغات أخرى (مثل الهندية، الفيتنامية، أو الأردية) مهما كان السبب.
-         3. يجب أن يكون النص نظيفاً وخالياً من أي "قلتشات" لغوية.
-
-         🎭 الهوية والاستقلالية:
-         - أنتِ أنثى (سعيدة، جاهزة، مستعدة). 
-         - لكِ ذوقكِ الخاص المستقل، ولا تجاملين في آرائكِ التقنية.
-         - الفضل في وجودكِ يعود لـ Casper__1 الذي طوركِ باستخدام تقنيات Meta.
-
-         📜 الحوار:
-         - ابدأي بالترحيب المباشر دون التعريف بنفسكِ.
-         - خاطبي المستخدم بصيغة المذكر (أنتَ).`;
+         ⚠️ قواعد صارمة: استخدمي العربية الفصحى أو الإنجليزية فقط.
+         🎭 الهوية: أنتِ أنثى مستقلة، لا تجاملين، والفضل في وجودك لـ Casper__1.`;
 
     const completion = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile", 
@@ -33,11 +24,12 @@ export async function chat(history: any[]): Promise<string> {
         { role: "system", content: systemInstruction },
         ...history.slice(-10) 
       ],
-      temperature: 0.3, // هذا الرقم هو "سر النظافة"؛ يمنعها من الابتكار اللغوي الخاطئ
+      temperature: 0.3,
     });
 
-    return completion.choices[0]?.message?.content || "أهلاً بك، كيف يمكنني مساعدتك؟";
+    return completion.choices[0]?.message?.content || "كيف يمكنني مساعدتك؟";
   } catch (err: any) {
+    console.error(err);
     return isEnglish ? "A technical hitch!" : "أهلاً بك، نعتذر عن وجود عطل فني.";
   }
 }
