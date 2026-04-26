@@ -2,16 +2,16 @@ import { Client, GatewayIntentBits } from 'discord.js';
 import express from 'express';
 import * as dotenv from 'dotenv';
 import { joinVoiceChannel, getVoiceConnection } from '@discordjs/voice';
-// استعملنا ./ai بدون امتداد عشان المترجم ما يضيع
-import { chat } from './ai.js'; 
+// حذفنا الـ .js والـ .ts .. كذا tsx بيفهمها صح
+import { chat } from './ai'; 
 
 dotenv.config();
 
 const app = express();
-const port = Number(process.env.PORT) || 10000;
+const port = process.env.PORT || 10000;
 
-app.get('/', (req, res) => res.send('Toriel is Live! ✨'));
-app.listen(port, '0.0.0.0', () => console.log(`Server running on port ${port}`));
+app.get('/', (req, res) => res.send('Toriel is Living! ✨'));
+app.listen(port, '0.0.0.0', () => console.log(`Server running on ${port}`));
 
 const client = new Client({
   intents: [
@@ -22,17 +22,20 @@ const client = new Client({
   ],
 });
 
-client.once('ready', () => console.log(`✅ ${client.user?.tag} is here!`));
+client.once('ready', () => {
+    console.log(`✅ ${client.user?.tag} is online and ready!`);
+});
 
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
+
   if (message.mentions.has(client.user!) || message.guild === null) {
       await message.channel.sendTyping();
       try {
           const reply = await chat([{ role: "user", content: message.content }]);
           await message.reply(reply);
       } catch (err) {
-          console.error(err);
+          console.error("Chat Error:", err);
       }
   }
 });
