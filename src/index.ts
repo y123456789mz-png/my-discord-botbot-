@@ -4,15 +4,13 @@ import dotenv from 'dotenv';
 import { chat } from './ai.js';
 import { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, getVoiceConnection } from '@discordjs/voice';
 import * as googleTTS from 'google-tts-api';
-// إضافة مكتبة ffmpeg-static يدوياً لضمان التعرف عليها
-import ffmpeg from 'ffmpeg-static';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 10000;
 app.get('/', (req, res) => res.send('توريال نشطة!'));
-app.listen(port, '0.0.0.0', () => console.log(`Server on ${port}`));
+app.listen(port, '0.0.0.0', () => console.log(`Server running`));
 
 const client = new Client({
   intents: [
@@ -27,13 +25,13 @@ const client = new Client({
 const memory = new Map<string, any[]>();
 const processing = new Set<string>();
 
-client.once('ready', (c) => console.log(`✅ Ready: ${c.user.tag}`));
+client.once('ready', () => console.log(`✅ Logged in as ${client.user?.tag}`));
 
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
   const content = message.content.trim();
 
-  // 1️⃣ أمر الدخول
+  // دخول الروم
   if (content === '/join') {
     const channel = message.member?.voice.channel;
     if (channel) {
@@ -42,14 +40,13 @@ client.on('messageCreate', async (message) => {
         guildId: channel.guild.id,
         adapterCreator: channel.guild.voiceAdapterCreator as any,
         selfDeaf: false,
-        selfMute: false, // تأكدنا إنها مو ميوت
       });
       return message.reply("Sounds fun! Sure. 😉");
     }
-    return message.reply("Get in a room first, Casper!");
+    return message.reply("Get in a room first!");
   }
 
-  // 2️⃣ أمر الخروج
+  // خروج من الروم
   if (content === '/leave') {
     const connection = getVoiceConnection(message.guildId!);
     if (connection) {
@@ -58,12 +55,12 @@ client.on('messageCreate', async (message) => {
     }
   }
 
-  // 3️⃣ أمر التحدث (مع إصلاح مسار FFmpeg)
+  // التحدث (تم تحسين معالجة الصوت)
   if (content.startsWith('/speak ')) {
     const channel = message.member?.voice.channel;
     if (channel) {
-      const textToSay = content.replace('/speak ', '').trim();
-      if (!textToSay) return;
+      const text = content.replace('/speak ', '').trim();
+      if (!text) return;
 
       const connection = joinVoiceChannel({
         channelId: channel.id,
@@ -72,24 +69,22 @@ client.on('messageCreate', async (message) => {
         selfDeaf: false,
       });
 
-      const url = googleTTS.getAudioUrl(textToSay, { lang: 'ar', slow: false, host: 'https://translate.google.com' });
+      const url = googleTTS.getAudioUrl(text, { lang: 'ar', slow: false, host: 'https://translate.google.com' });
       
       const player = createAudioPlayer();
-      // هنا "السر": نجبر البوت يستخدم النسخة اللي حملناها من ffmpeg
-      const resource = createAudioResource(url, {
-        inlineVolume: true
-      });
+      const resource = createAudioResource(url);
 
       player.play(resource);
       connection.subscribe(player);
 
-      player.on('error', error => console.error(`Audio Player Error: ${error.message}`));
+      // إضافة مراقب للأخطاء في الـ Logs
+      player.on('error', err => console.error('Audio Error:', err.message));
       
-      return; 
+      return;
     }
   }
 
-  // 4️⃣ نظام السوالف الذكي
+  // نظام السوالف
   const isMentioned = message.mentions.has(client.user!);
   if ((isMentioned || message.guild === null) && !processing.has(message.id)) {
     processing.add(message.id);
