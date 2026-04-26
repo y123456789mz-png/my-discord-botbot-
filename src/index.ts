@@ -2,42 +2,49 @@ import { Client, GatewayIntentBits, Partials } from 'discord.js';
 import express from 'express';
 import dotenv from 'dotenv';
 import { chat } from './ai.js';
-import { 
-    joinVoiceChannel, 
-    createAudioPlayer, 
-    createAudioResource, 
-    getVoiceConnection,
-    StreamType,
-    AudioPlayerStatus,
-    entersState,
-    VoiceConnectionStatus
-} from '@discordjs/voice';
-import * as googleTTS from 'google-tts-api';
+import { joinVoiceChannel, getVoiceConnection } from '@discordjs/voice';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 10000;
-app.get('/', (req, res) => res.send('Toriel is Ready!'));
-app.listen(port, '0.0.0.0', () => console.log(`Server running on port ${port}`));
+app.get('/', (req, res) => res.send('Toriel is watching the room!'));
+app.listen(port, '0.0.0.0', () => console.log(`Server is up on ${port}`));
 
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.GuildVoiceStates, // ضروري لمراقبة الروم
   ],
   partials: [Partials.Channel],
 });
 
-client.once('ready', () => console.log(`✅ Logged in as ${client.user?.tag}`));
+client.once('ready', () => console.log(`✅ ${client.user?.tag} is ready!`));
+
+// نظام مراقبة الروم: إذا فضي الروم تطلع
+client.on('voiceStateUpdate', (oldState, newState) => {
+    const connection = getVoiceConnection(oldState.guild.id);
+    
+    // إذا البوت متصل بروم صوته أصلاً
+    if (connection) {
+        const channelId = connection.joinConfig.channelId;
+        const channel = oldState.guild.channels.cache.get(channelId!) as any;
+
+        // إذا الروم صار فيه شخص واحد (اللي هو البوت نفسه) أو فضي تماماً
+        if (channel && channel.members.size <= 1) {
+            console.log("الروم فضي.. توريال سحبت نفسها.");
+            connection.destroy();
+        }
+    }
+});
 
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
   const content = message.content.trim();
 
-  // أمر الدخول
+  // دخول الروم
   if (content === '/join') {
     const channel = message.member?.voice.channel;
     if (channel) {
@@ -46,57 +53,22 @@ client.on('messageCreate', async (message) => {
         guildId: channel.guild.id,
         adapterCreator: channel.guild.voiceAdapterCreator as any,
         selfDeaf: false,
-        selfMute: false,
       });
-      return message.reply("Sounds fun! I'm in. 😉");
+      return message.reply("I'm here to keep you company. I'll leave when everyone else does. 😊");
     }
     return message.reply("Get in a room first!");
   }
 
-  // أمر التحدث (المعدل والمضمون)
-  if (content.startsWith('/speak ')) {
-    const channel = message.member?.voice.channel;
-    if (channel) {
-      const text = content.replace('/speak ', '').trim();
-      if (!text) return;
-
-      const connection = joinVoiceChannel({
-        channelId: channel.id,
-        guildId: channel.guild.id,
-        adapterCreator: channel.guild.voiceAdapterCreator as any,
-        selfDeaf: false,
-        selfMute: false,
-      });
-
-      try {
-        // ننتظر الاتصال يصير Ready عشان نضمن إن الأنابيب الصوتية شبكت
-        await entersState(connection, VoiceConnectionStatus.Ready, 5_000);
-        
-        const url = googleTTS.getAudioUrl(text, { lang: 'ar', slow: false, host: 'https://translate.google.com' });
-        const player = createAudioPlayer();
-        const resource = createAudioResource(url, { inputType: StreamType.Arbitrary });
-
-        connection.subscribe(player);
-        player.play(resource);
-
-        player.on(AudioPlayerStatus.Playing, () => console.log(`[Audio] Speaking now: ${text}`));
-        player.on('error', error => console.error("[Audio Error]:", error.message));
-
-      } catch (error) {
-        console.error("Voice Error:", error);
-      }
-      return;
-    }
-    return message.reply("I need to be in a voice channel to speak!");
-  }
-
-  // أمر الخروج
+  // خروج يدوي
   if (content === '/leave') {
-    getVoiceConnection(message.guildId!)?.destroy();
-    return message.reply("See ya! 👋");
+    const connection = getVoiceConnection(message.guildId!);
+    if (connection) {
+      connection.destroy();
+      return message.reply("Bye for now! 👋");
+    }
   }
 
-  // نظام السوالف العادي
+  // السوالف الكتابية
   if (message.mentions.has(client.user!) || message.guild === null) {
       await message.channel.sendTyping();
       const reply = await chat([{role: "user", content: message.content}]);
