@@ -2,34 +2,26 @@ import Groq from "groq-sdk";
 import dotenv from 'dotenv';
 dotenv.config();
 
-// نتحقق من وجود المفتاح في الـ Logs
-if (!process.env.GROQ_API_KEY) {
-    console.log("❌ ALERT: GROQ_API_KEY is undefined in Render!");
-}
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "" });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function chat(prompt: string) {
     try {
         const completion = await groq.chat.completions.create({
-            model: "llama-3.3-70b-versatile", // موديل حديث وقوي جداً
+            model: "llama-3.3-70b-versatile", 
             messages: [
                 { 
                     role: "system", 
-                    content: "Your name is Toriel. No emojis. Arabic=Fusha. English=British accent. Concise." 
+                    content: "Your name is Toriel. STRICT RULES: 1. No emojis ever. 2. If the user speaks Arabic, respond ONLY in Modern Standard Arabic (Fusha). 3. If the user speaks English, respond with a heavy British accent (use words like: mate, brilliant, lovely, rubbish). 4. Never use the word 'أبشر'. 5. Be concise, sophisticated, and independent." 
                 },
                 { role: "user", content: prompt }
             ],
             temperature: 0.6,
         });
 
-        return completion.choices[0]?.message?.content || "No content returned.";
+        return completion.choices[0]?.message?.content || "I am speechless, mate.";
 
     } catch (error: any) {
-        // الحين بدل ما نقول Technical hitch، بنخليه يطبع السبب الحقيقي
-        console.error("DEBUG_GROQ_ERROR:", error);
-        
-        // بيعطيك تفاصيل الخطأ في الديسكورد عشان نحلها فوراً
-        return `❌ Error Details: ${error.message || "Unknown Error"}`;
+        console.error("GROQ_ERROR:", error);
+        return "A technical hitch happened in my brain.";
     }
 }
