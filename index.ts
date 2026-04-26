@@ -6,7 +6,6 @@ import http from 'http';
 
 dotenv.config();
 
-// سيرفر عشان ريندر ما يطفي البوت
 http.createServer((req, res) => {
     res.writeHead(200);
     res.end('Toriel is Live!');
@@ -22,10 +21,9 @@ const client = new Client({
 });
 
 client.once(Events.ClientReady, (c) => {
-    console.log(`✅ ${c.user.tag} is active and ready.`);
+    console.log(`✅ ${c.user.tag} is online and functioning properly.`);
 });
 
-// الخروج التلقائي إذا فضي الروم
 client.on(Events.VoiceStateUpdate, (oldState) => {
     const connection = getVoiceConnection(oldState.guild.id);
     if (connection) {
@@ -39,7 +37,6 @@ client.on(Events.VoiceStateUpdate, (oldState) => {
 client.on(Events.MessageCreate, async (message) => {
     if (message.author.bot) return;
 
-    // أمر الدخول (شلع الدفن والميوت)
     if (message.content.startsWith('/join')) {
         const channel = message.member?.voice.channel;
         if (!channel) return message.reply("Join a voice channel first, Casper.");
@@ -52,18 +49,14 @@ client.on(Events.MessageCreate, async (message) => {
                 selfDeaf: false, 
                 selfMute: false,
             });
-
-            // تأكيد إضافي لإزالة الدفن
+            // حل الدفن النهائي
             connection.rejoin({ selfDeaf: false, selfMute: false });
-
-            const replies = ["I am on my way", "I am coming", "I am here"];
-            return message.reply(replies[Math.floor(Math.random() * replies.length)]);
+            return message.reply("I am on my way");
         } catch (error) {
             return message.reply("Error connecting to voice.");
         }
     }
 
-    // الرد على الشات
     if (message.mentions.has(client.user!) || message.content.startsWith('!')) {
         const input = message.content.replace(/<@!?\d+>/g, '').replace('!', '').trim();
         if (!input) return;
