@@ -2,39 +2,34 @@ import Groq from "groq-sdk";
 import dotenv from 'dotenv';
 dotenv.config();
 
-// نتحقق من وجود المفتاح أول ما يشتغل البوت
+// نتحقق من وجود المفتاح في الـ Logs
 if (!process.env.GROQ_API_KEY) {
-    console.error("❌ MISSING GROQ_API_KEY IN RENDER ENVIRONMENT VARIABLES");
+    console.log("❌ ALERT: GROQ_API_KEY is undefined in Render!");
 }
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "" });
 
 export async function chat(prompt: string) {
     try {
         const completion = await groq.chat.completions.create({
-            // هذا الموديل مستقر جداً وسريع
-            model: "gemma2-9b-it", 
+            model: "llama-3.3-70b-versatile", // موديل حديث وقوي جداً
             messages: [
                 { 
                     role: "system", 
-                    content: "Your name is Toriel. Strict rules: No emojis. If the user speaks Arabic, respond in Modern Standard Arabic (Fusha) only. If English, use a British accent (mate, brilliant). Concise only." 
+                    content: "Your name is Toriel. No emojis. Arabic=Fusha. English=British accent. Concise." 
                 },
                 { role: "user", content: prompt }
             ],
-            temperature: 0.5,
-            max_tokens: 500,
+            temperature: 0.6,
         });
 
-        const reply = completion.choices[0]?.message?.content;
-        return reply || "I am speechless, mate.";
+        return completion.choices[0]?.message?.content || "No content returned.";
 
     } catch (error: any) {
-        // بنطبع الخطأ الحقيقي في الـ Logs حق ريندر عشان لو خربت نعرف السبب
-        console.error("GROQ_RAW_ERROR:", error.message);
+        // الحين بدل ما نقول Technical hitch، بنخليه يطبع السبب الحقيقي
+        console.error("DEBUG_GROQ_ERROR:", error);
         
-        // إذا كان المفتاح غلط بيعطيك هذا الرد
-        if (error.status === 401) return "Wrong API Key, mate. Check your Render settings.";
-        
-        return "A technical hitch happened in my brain.";
+        // بيعطيك تفاصيل الخطأ في الديسكورد عشان نحلها فوراً
+        return `❌ Error Details: ${error.message || "Unknown Error"}`;
     }
 }
