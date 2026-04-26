@@ -2,16 +2,17 @@ import { Client, GatewayIntentBits, Partials } from 'discord.js';
 import express from 'express';
 import dotenv from 'dotenv';
 import { chat } from './ai.js';
+// المكتبات الجديدة للصوت
+import { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus } from '@discordjs/voice';
+import * as googleTTS from 'google-tts-api';
 
 dotenv.config();
 
-// --- تحسين الربط مع رندر لمنع الإغلاق التلقائي ---
 const app = express();
 const port = process.env.PORT || 10000;
 
 app.get('/', (req, res) => res.send('توريال في حالة يقظة تامة!'));
 
-// إضافة '0.0.0.0' ضروري جداً ليرى رندر أن السيرفر متاح خارجياً
 app.listen(port, '0.0.0.0', () => {
   console.log(`✅ الخادم الوهمي نشط على المنفذ: ${port}`);
 });
@@ -21,6 +22,7 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildVoiceStates, // ضروري جداً للدخول للرومات الصوتية
   ],
   partials: [Partials.Channel],
 });
@@ -35,6 +37,38 @@ client.once('ready', (c) => {
 client.on('messageCreate', async (message) => {
   if (message.author.bot || processing.has(message.id)) return;
 
+  // --- قسم الأوامر الصوتية (!speak) ---
+  if (message.content.startsWith('!speak')) {
+    const channel = message.member?.voice.channel;
+    if (channel) {
+      const textToSay = message.content.replace('!speak', '').trim() || "أهلاً بك يا كاسبر، أنا توريال";
+      
+      const connection = joinVoiceChannel({
+        channelId: channel.id,
+        guildId: channel.guild.id,
+        adapterCreator: channel.guild.voiceAdapterCreator as any,
+      });
+
+      const url = googleTTS.getAudioUrl(textToSay, {
+        lang: 'ar',
+        slow: false,
+        host: 'https://translate.google.com',
+      });
+
+      const player = createAudioPlayer();
+      const resource = createAudioResource(url);
+      
+      player.play(resource);
+      connection.subscribe(player);
+      await message.reply("أبشر، دخلت الروم وقاعد أتكلم! 🎙️✨");
+      return; // عشان ما يكمل ويروح للذكاء الاصطناعي
+    } else {
+      await message.reply("ادخل روم صوتي أول يا وحش!");
+      return;
+    }
+  }
+
+  // --- قسم الذكاء الاصطناعي (كودك الأصلي) ---
   const isMentioned = message.mentions.has(client.user!);
   const isDM = message.guild === null;
 
