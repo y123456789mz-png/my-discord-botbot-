@@ -15,7 +15,7 @@ export async function chat(prompt: string) {
                 },
                 { role: "user", content: prompt }
             ],
-            temperature: 0.7,
+            temperature: 0.7, // رفعنا الحرارة شوي عشان يرجع لها الابتكار والروح
         });
 
         return completion.choices[0]?.message?.content || "I am here, my child.";
