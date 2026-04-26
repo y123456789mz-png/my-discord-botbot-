@@ -6,11 +6,9 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": false,
-    "noImplicitAny": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "allowJs": true,
-    "checkJs": false
+    "moduleDetection": "force"
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*.ts"]
 }
