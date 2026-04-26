@@ -7,17 +7,18 @@ import {
     createAudioPlayer, 
     createAudioResource, 
     getVoiceConnection,
-    StreamType
+    StreamType,
+    AudioPlayerStatus
 } from '@discordjs/voice';
 import * as googleTTS from 'google-tts-api';
-// استيراد المسار حق ffmpeg-static
-import ffmpegPath from 'ffmpeg-static';
+// استيراد المسار الحقيقي للمكتبة
+import ffmpeg from 'ffmpeg-static';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 10000;
-app.get('/', (req, res) => res.send('Tutorial is online!'));
+app.get('/', (req, res) => res.send('Toriel is here!'));
 app.listen(port, '0.0.0.0', () => console.log(`Server on ${port}`));
 
 const client = new Client({
@@ -75,30 +76,26 @@ client.on('messageCreate', async (message) => {
       
       const player = createAudioPlayer();
       
-      // هنا "الخطة الجبارة": نخبر البوت بمسار FFmpeg يدوياً
+      // الضربة القاضية: إجبار المشغل على استخدام FFmpeg من المكتبة
       const resource = createAudioResource(url, {
           inputType: StreamType.Arbitrary,
           inlineVolume: true
       });
 
-      // نربطهم ببعض
       connection.subscribe(player);
-      
-      // نشغل الصوت
       player.play(resource);
 
+      player.on(AudioPlayerStatus.Playing, () => console.log("بدأ الصوت الحين!"));
       player.on('error', error => {
-        console.error("Audio Error:", error);
+        console.error("Audio Error Detail:", error);
       });
 
       return;
     }
   }
 
-  // نظام السوالف (توريال)
   const isMentioned = message.mentions.has(client.user!);
   if (isMentioned || message.guild === null) {
-      // كود الذكاء الاصطناعي (ai.js)
       await message.channel.sendTyping();
       const reply = await chat([{role: "user", content: message.content}]);
       await message.reply(reply);
