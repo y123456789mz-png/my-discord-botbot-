@@ -1,52 +1,61 @@
 import { Client, GatewayIntentBits } from 'discord.js';
-import express from 'express';
-import * as dotenv from 'dotenv';
-import { chat } from './bot.ts';
-// تحميل الإعدادات
+import { joinVoiceChannel } from '@discordjs/voice';
+import { chat } from './bot.ts'; // تأكد إن الاسم كذا بالضبط عندك
+import dotenv from 'dotenv';
+
 dotenv.config();
 
-const app = express();
-const port = process.env.PORT || 10000;
-
-app.get('/', (req, res) => res.send('Toriel is Living! ✨'));
-app.listen(port, '0.0.0.0', () => console.log(`✅ Web Server on port ${port}`));
-
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildVoiceStates, // ضروري عشان الصوت
+    ],
 });
 
-// صيد أخطاء التشغيل
-client.on('error', (err) => console.error('Discord Client Error:', err));
-process.on('unhandledRejection', (err) => console.error('Unhandled Promise Rejection:', err));
-
 client.once('ready', () => {
-    console.log(`✅ ${client.user?.tag} اشتغل أخيراً!`);
+    console.log(`✅ ${client.user?.tag} اشتغل ودخل الخدمة!`);
 });
 
 client.on('messageCreate', async (message) => {
-  if (message.author.bot) return;
+    if (message.author.bot) return;
 
-  if (message.mentions.has(client.user!) || message.guild === null) {
-      try {
-          await message.channel.sendTyping();
-          const reply = await chat([{ role: "user", content: message.content }]);
-          await message.reply(reply);
-      } catch (err) {
-          console.error("AI Error:", err);
-          await message.reply("عندي مشكلة في المخ (AI Error)، تأكد من مفتاح GROQ_API_KEY.");
-      }
-  }
+    // أمر دخول الروم الصوتي
+    if (message.content.startsWith('/join')) {
+        const member = message.member;
+        const channel = member?.voice.channel;
+
+        if (!channel) {
+            return message.reply('يا كاسبر ادخل روم أول عشان ألحقك! 🏃‍♂️');
+        }
+
+        try {
+            joinVoiceChannel({
+                channelId: channel.id,
+                guildId: channel.guild.id,
+                adapterCreator: channel.guild.voiceAdapterCreator,
+            });
+            return message.reply(`✅ أبشر، دخلت روم ${channel.name}!`);
+        } catch (error) {
+            console.error(error);
+            return message.reply('صار عندي مغص وما قدرت أدخل الروم.. شيك على الـ Logs!');
+        }
+    }
+
+    // نظام الدردشة الذكي اللي ضبطناه
+    if (message.content.startsWith('!')) {
+        const prompt = message.content.slice(1).trim();
+        if (!prompt) return;
+
+        try {
+            const response = await chat(prompt);
+            await message.reply(response);
+        } catch (err) {
+            console.error(err);
+            await message.reply('والله ياهو معلق مخي شوي.. جرب تسألني بعدين.');
+        }
+    }
 });
 
-// التأكد من وجود التوكن قبل التشغيل
-if (!process.env.DISCORD_TOKEN) {
-    console.error("❌ خطأ: مالقيت DISCORD_TOKEN في إعدادات ريندر!");
-} else {
-    client.login(process.env.DISCORD_TOKEN).catch(err => {
-        console.error("❌ فشل تسجيل الدخول في ديسكورد:", err.message);
-    });
-}
+client.login(process.env.DISCORD_TOKEN);
