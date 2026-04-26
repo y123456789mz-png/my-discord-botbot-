@@ -4,6 +4,7 @@ import * as dotenv from 'dotenv';
 import { joinVoiceChannel, getVoiceConnection } from '@discordjs/voice';
 import { chat } from './ai.js'; 
 
+// التعديل هنا: علّمنا البوت إن ملف الـ env موجود في المجلد اللي فوقه
 dotenv.config({ path: '../.env' });
 
 const app = express();
