@@ -1,14 +1,24 @@
 {
+  "name": "toriel-bot",
+  "version": "1.0.0",
+  "description": "Toriel bot for Casper",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "npx tsx src/index.ts",
+    "build": "pnpm install"
+  },
   "dependencies": {
     "discord.js": "^14.16.3",
+    "@discordjs/voice": "^0.17.0",
+    "@discordjs/opus": "^0.9.0",
     "dotenv": "^16.4.5",
     "express": "^4.18.2",
-    "groq-sdk": "^0.3.3",
     "tsx": "^4.19.1",
-    "@discordjs/voice": "^0.17.0",
-    "libsodium-wrappers": "^0.7.13",
-    "@discordjs/opus": "^0.9.0",
-    "ffmpeg-static": "^5.2.0",
-    "google-tts-api": "^2.0.2"
+    "groq-sdk": "^0.3.3",
+    "libsodium-wrappers": "^0.7.13"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
