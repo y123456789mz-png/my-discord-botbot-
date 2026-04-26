@@ -7,7 +7,6 @@ import * as googleTTS from 'google-tts-api';
 
 dotenv.config();
 
-// --- خادم الويب للحفاظ على نشاط البوت ---
 const app = express();
 const port = process.env.PORT || 10000;
 app.get('/', (req, res) => res.send('توريال في حالة يقظة تامة!'));
@@ -15,7 +14,6 @@ app.listen(port, '0.0.0.0', () => {
   console.log(`✅ الخادم الوهمي نشط على المنفذ: ${port}`);
 });
 
-// --- إعداد العميل ---
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -38,7 +36,7 @@ client.on('messageCreate', async (message) => {
 
   const content = message.content.trim();
 
-  // 1️⃣ أمر الدخول /join
+  // 1️⃣ أمر الدخول /join (تعديل الرد وشكل الدخول)
   if (content === '/join') {
     const channel = message.member?.voice.channel;
     if (channel) {
@@ -46,10 +44,11 @@ client.on('messageCreate', async (message) => {
         channelId: channel.id,
         guildId: channel.guild.id,
         adapterCreator: channel.guild.voiceAdapterCreator as any,
+        selfDeaf: false, // هنا شلنا الـ Deafen عشان ما تطلع العلامة
       });
-      return message.reply("أبشر، دخلت الروم! 🫡");
+      return message.reply("Sounds fun! Sure. 😉");
     }
-    return message.reply("ادخل روم صوتي أول يا كاسبر!");
+    return message.reply("You need to be in a voice channel first, Casper!");
   }
 
   // 2️⃣ أمر الخروج /leave
@@ -57,9 +56,9 @@ client.on('messageCreate', async (message) => {
     const connection = getVoiceConnection(message.guildId!);
     if (connection) {
       connection.destroy();
-      return message.reply("يلا، استودعتكم الله! 👋");
+      return message.reply("See ya! 👋");
     }
-    return message.reply("أنا أصلاً مو في الروم!");
+    return message.reply("I'm not even in a room!");
   }
 
   // 3️⃣ أمر التحدث /speak
@@ -67,12 +66,13 @@ client.on('messageCreate', async (message) => {
     const channel = message.member?.voice.channel;
     if (channel) {
       const textToSay = content.replace('/speak ', '').trim();
-      if (!textToSay) return message.reply("اكتب وش تبيني أقول بعد /speak");
+      if (!textToSay) return;
 
       const connection = joinVoiceChannel({
         channelId: channel.id,
         guildId: channel.guild.id,
         adapterCreator: channel.guild.voiceAdapterCreator as any,
+        selfDeaf: false,
       });
 
       const url = googleTTS.getAudioUrl(textToSay, {
@@ -84,9 +84,8 @@ client.on('messageCreate', async (message) => {
       const player = createAudioPlayer();
       player.play(createAudioResource(url));
       connection.subscribe(player);
-      return; // يتكلم بدون ما يرسل رد نصي يزعجك
+      return; 
     }
-    return message.reply("لازم تكون في روم صوتي عشان أتكلم!");
   }
 
   // 4️⃣ نظام السوالف (فقط إذا منشنته أو في الخاص)
