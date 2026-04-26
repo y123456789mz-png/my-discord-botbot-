@@ -1,13 +1,4 @@
 {
-  "name": "my-discord-bot",
-  "version": "1.0.0",
-  "description": "A sophisticated Discord bot with dual language personality",
-  "type": "module",
-  "main": "src/index.ts",
-  "scripts": {
-    "start": "npx tsx src/index.ts",
-    "dev": "npx tsx --watch src/index.ts"
-  },
   "dependencies": {
     "discord.js": "^14.16.3",
     "dotenv": "^16.4.5",
@@ -20,8 +11,5 @@
     "@discordjs/opus": "^0.9.0",
     "ffmpeg-static": "^5.2.0",
     "google-tts-api": "^2.0.2"
-  },
-  "engines": {
-    "node": ">=20.0.0"
   }
 }
