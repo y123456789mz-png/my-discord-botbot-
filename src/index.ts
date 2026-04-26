@@ -13,8 +13,17 @@ import {
     VoiceConnectionStatus
 } from '@discordjs/voice';
 import * as googleTTS from 'google-tts-api';
+// إضافة مكتبة التشفير ضروري جداً
+import libsodium from 'libsodium-wrappers';
 
 dotenv.config();
+
+// تفعيل التشفير الصوتي قبل تشغيل البوت
+async function init() {
+    await libsodium.ready;
+    console.log("✅ Audio Encryption Ready");
+}
+init();
 
 const app = express();
 const port = process.env.PORT || 10000;
@@ -37,7 +46,6 @@ client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
   const content = message.content.trim();
 
-  // دخول الروم
   if (content === '/join') {
     const channel = message.member?.voice.channel;
     if (channel) {
@@ -47,40 +55,40 @@ client.on('messageCreate', async (message) => {
         adapterCreator: channel.guild.voiceAdapterCreator as any,
         selfDeaf: false,
       });
-      return message.reply("Sounds fun! Sure. 😉");
+      return message.reply("I'm in! 😉");
     }
   }
 
-  // التحدث (النسخة الصارمة)
   if (content.startsWith('/speak ')) {
     const channel = message.member?.voice.channel;
-    if (channel) {
-      const text = content.replace('/speak ', '').trim();
-      if (!text) return;
+    if (!channel) return message.reply("Join a room first!");
 
-      const connection = joinVoiceChannel({
-        channelId: channel.id,
-        guildId: channel.guild.id,
-        adapterCreator: channel.guild.voiceAdapterCreator as any,
-        selfDeaf: false,
-      });
+    const text = content.replace('/speak ', '').trim();
+    if (!text) return;
 
-      try {
-        // ننتظر الاتصال يصير Ready قبل ما نشغل أي شيء
-        await entersState(connection, VoiceConnectionStatus.Ready, 5_000);
-        
-        const url = googleTTS.getAudioUrl(text, { lang: 'ar', slow: false, host: 'https://translate.google.com' });
-        const player = createAudioPlayer();
-        const resource = createAudioResource(url, { inputType: StreamType.Arbitrary });
+    const connection = joinVoiceChannel({
+      channelId: channel.id,
+      guildId: channel.guild.id,
+      adapterCreator: channel.guild.voiceAdapterCreator as any,
+      selfDeaf: false,
+    });
 
-        player.play(resource);
-        connection.subscribe(player);
+    try {
+      await entersState(connection, VoiceConnectionStatus.Ready, 5_000);
+      
+      const url = googleTTS.getAudioUrl(text, { lang: 'ar', slow: false, host: 'https://translate.google.com' });
+      const player = createAudioPlayer();
+      // استخدام OggOpus كخيار بديل إذا فشل العادي
+      const resource = createAudioResource(url, { inputType: StreamType.Arbitrary });
 
-        console.log(`[Audio] Speaking: ${text}`);
-      } catch (error) {
-        console.error("Voice Connection Error:", error);
-      }
-      return;
+      connection.subscribe(player);
+      player.play(resource);
+
+      player.on(AudioPlayerStatus.Playing, () => console.log(`[Audio] Playing: ${text}`));
+      player.on('error', err => console.error("Audio Player Error:", err));
+
+    } catch (error) {
+      console.error("Voice Error:", error);
     }
   }
 
@@ -89,7 +97,6 @@ client.on('messageCreate', async (message) => {
     return message.reply("See ya! 👋");
   }
 
-  // سوالف الذكاء الاصطناعي
   if (message.mentions.has(client.user!) || message.guild === null) {
       await message.channel.sendTyping();
       const reply = await chat([{role: "user", content: message.content}]);
