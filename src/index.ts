@@ -6,10 +6,9 @@ import { joinVoiceChannel, getVoiceConnection } from '@discordjs/voice';
 
 dotenv.config();
 
-// إعداد السيرفر عشان Render ما يطفي
 const app = express();
 const port = process.env.PORT || 10000;
-app.get('/', (req, res) => res.send('Toriel is in the house!'));
+app.get('/', (req, res) => res.send('Toriel is Adaptive!'));
 app.listen(port, '0.0.0.0', () => console.log(`Server on ${port}`));
 
 const client = new Client({
@@ -22,22 +21,24 @@ const client = new Client({
   partials: [Partials.Channel],
 });
 
+// متغير لحفظ حالة الروم
+let isInVoice = false;
+
 client.once('ready', () => {
     console.log(`✅ Logged in as ${client.user?.tag}`);
-    client.user?.setActivity('the vibes', { type: 3 }); // Watching
 });
 
-// نظام "الانسحاب التكتيكي": إذا الروم فضي، تطلع
+// نظام مراقبة الروم والنسيان
 client.on('voiceStateUpdate', (oldState, newState) => {
     const connection = getVoiceConnection(oldState.guild.id);
     if (connection) {
         const channelId = connection.joinConfig.channelId;
         const channel = oldState.guild.channels.cache.get(channelId!) as any;
 
-        // إذا ما بقى في الروم إلا البوت (أو أقل)
         if (channel && channel.members.size <= 1) {
-            console.log("Room is empty, Toriel is heading out.");
+            console.log("Room empty. Leaving and resetting context...");
             connection.destroy();
+            isInVoice = false; // هنا تنسى إنها كانت في الروم
         }
     }
 });
@@ -47,7 +48,6 @@ client.on('messageCreate', async (message) => {
 
   const content = message.content.trim();
 
-  // 1. أمر الدخول /join
   if (content === '/join') {
     const channel = message.member?.voice.channel;
     if (channel) {
@@ -57,33 +57,30 @@ client.on('messageCreate', async (message) => {
         adapterCreator: channel.guild.voiceAdapterCreator as any,
         selfDeaf: false,
       });
-      client.user?.setActivity('with Casper in Voice', { type: 0 }); // Playing
-      return message.reply("Alright! I'm in the room. Let's hang out. ✨");
+      isInVoice = true; // الحين عرفت إنها دخلت
+      return message.reply("I'm in! I'll match your language and vibe. ✨");
     }
-    return message.reply("You need to be in a voice channel first!");
+    return message.reply("Join a voice channel first!");
   }
 
-  // 2. أمر الخروج /leave
   if (content === '/leave') {
     const connection = getVoiceConnection(message.guildId!);
     if (connection) {
       connection.destroy();
-      client.user?.setActivity('the vibes', { type: 3 }); 
-      return message.reply("Catch you later! 👋");
+      isInVoice = false; // تصفر الذاكرة يدوياً
+      return message.reply("See ya! 👋");
     }
   }
 
-  // 3. نظام السوالف (بالمنشن)
   if (message.mentions.has(client.user!) || message.guild === null) {
       await message.channel.sendTyping();
 
-      // التحقق من حالة الروم عشان "توريال" تفهم وين هي
-      const connection = getVoiceConnection(message.guildId!);
-      let contextNote = "";
-
-      if (connection) {
-          // هذي الملاحظة تروح للذكاء الاصطناعي وما تظهر للمستخدم
-          contextNote = "[System Info: You are currently in a voice channel with the user. You are just 'chilling' and hanging out. Acknowledge this if relevant.]\n";
+      // إعداد الملاحظة المخفية بناءً على الحالة
+      let contextNote = "[System: Respond in the SAME language the user uses. ";
+      if (isInVoice) {
+          contextNote += "You are currently hanging out in a voice channel. Acknowledge this naturally if asked.]\n";
+      } else {
+          contextNote += "You are NOT in a voice channel right now.]\n";
       }
 
       try {
