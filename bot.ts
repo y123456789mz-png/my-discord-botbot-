@@ -2,36 +2,39 @@ import Groq from "groq-sdk";
 import dotenv from 'dotenv';
 dotenv.config();
 
-// تأكد أن المفتاح في ريندر بنفس هذا الاسم بالضبط GROQ_API_KEY
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+// محاولة جلب المفتاح بأكثر من طريقة للتأكد
+const apiKey = process.env.GROQ_API_KEY;
+
+const groq = new Groq({ 
+    apiKey: apiKey 
+});
 
 export async function chat(prompt: string) {
     try {
+        // استخدمنا موديل Mixtral لأنه أسرع وأقل مشاكل في الاتصال
         const completion = await groq.chat.completions.create({
-            // استخدمنا موديل 70b لأنه أقوى في استيعاب الشخصية
-            model: "llama3-70b-8192", 
+            model: "mixtral-8x7b-32768", 
             messages: [
                 { 
                     role: "system", 
-                    content: "Your name is Toriel. Strict rules: 1. No emojis. 2. Arabic = Modern Standard Arabic (Fusha) only. 3. English = British accent (use words like: mate, brilliant, lovely). 4. Be concise and independent. 5. Never use 'أبشر'." 
+                    content: "Your name is Toriel. No emojis. Arabic = Modern Standard Arabic (Fusha). English = British accent. Concise. Never use 'أبشر'." 
                 },
                 { role: "user", content: prompt }
             ],
-            temperature: 0.6,
-            max_tokens: 1024,
+            temperature: 0.5,
         });
 
-        const response = completion.choices[0]?.message?.content;
-        
-        if (!response) {
-            return "I am at a loss for words, mate.";
-        }
-        
-        return response;
+        return completion.choices[0]?.message?.content || "I am silent, mate.";
 
-    } catch (error) {
-        // هذا السطر بيطبع لك الغلط بالضبط في Console حق ريندر عشان نعرف وش المشكلة
-        console.error("GROQ_ERROR_DETAILS:", error); 
+    } catch (error: any) {
+        // طباعة الخطأ في الـ Logs حق ريندر عشان لو فشل نعرف ليه
+        console.error("DETAILED_ERROR:", error.message);
+        
+        // إذا كان الخطأ بسبب المفتاح
+        if (error.message.includes("401")) return "Wrong API Key, mate.";
+        // إذا كان بسبب الموديل
+        if (error.message.includes("404")) return "Model not found.";
+        
         return "A technical hitch happened in my brain.";
     }
 }
