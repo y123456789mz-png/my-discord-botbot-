@@ -2,7 +2,7 @@ import { Client, GatewayIntentBits, Partials } from 'discord.js';
 import express from 'express';
 import * as dotenv from 'dotenv';
 import { joinVoiceChannel, getVoiceConnection } from '@discordjs/voice';
-import { chat } from './ai.js'; 
+import { chat } from './ai.js'; // تأكد أن ملف الـ AI اسمه ai.ts داخل مجلد src
 
 dotenv.config();
 
@@ -20,17 +20,20 @@ const client = new Client({
   partials: [Partials.Channel],
 });
 
+// حالة الوجود في الروم
 let isInVoice = false;
 
 client.once('ready', () => {
-    console.log(`✅ ${client.user?.tag} is online!`);
+    console.log(`✅ ${client.user?.tag} is online and ready!`);
 });
 
+// نظام مراقبة الروم (يطلع لو فضي)
 client.on('voiceStateUpdate', (oldState, newState) => {
     const connection = getVoiceConnection(oldState.guild.id);
     if (connection) {
         const channelId = connection.joinConfig.channelId;
         const channel = oldState.guild.channels.cache.get(channelId!) as any;
+
         if (channel && channel.members.size <= 1) {
             connection.destroy();
             isInVoice = false;
@@ -40,8 +43,10 @@ client.on('voiceStateUpdate', (oldState, newState) => {
 
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
+
   const content = message.content.trim();
 
+  // أوامر الدخول والخروج
   if (content === '/join') {
     const channel = message.member?.voice.channel;
     if (channel) {
@@ -62,16 +67,23 @@ client.on('messageCreate', async (message) => {
     return message.reply("See ya! 👋");
   }
 
+  // نظام الردود باستخدام كود الـ AI "الرهيب" حقك
   if (message.mentions.has(client.user!) || message.guild === null) {
       await message.channel.sendTyping();
-      let context = "[System: Reply in the same language as the user. ";
-      context += isInVoice ? "You are in a voice channel with them.]\n" : "You are not in a voice channel.]\n";
+
+      // نرسل السياق الصوتي داخل الهيستوري بشكل مخفي
+      const voiceContext = isInVoice 
+        ? "[Note: You are currently in a voice channel with Casper__1]" 
+        : "[Note: You are in text chat]";
 
       try {
-          const reply = await chat([{ role: "user", content: context + message.content }]);
+          const reply = await chat([
+            { role: "system", content: voiceContext },
+            { role: "user", content: message.content }
+          ]);
           await message.reply(reply);
       } catch (err) {
-          console.error("Chat Error:", err);
+          console.error("AI Error:", err);
       }
   }
 });
