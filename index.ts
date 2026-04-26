@@ -1,14 +1,15 @@
 import { Client, GatewayIntentBits, Events } from 'discord.js';
-import { joinVoiceChannel, getVoiceConnection } from '@discordjs/voice';
+import { joinVoiceChannel, getVoiceConnection, VoiceConnectionStatus } from '@discordjs/voice';
 import { chat } from './bot.ts'; 
 import dotenv from 'dotenv';
 import http from 'http';
 
 dotenv.config();
 
+// سيرفر عشان ريندر ما يطفي البوت
 http.createServer((req, res) => {
-    res.write('Toriel is Live!');
-    res.end();
+    res.writeHead(200);
+    res.end('Toriel is Awake');
 }).listen(10000);
 
 const client = new Client({
@@ -21,57 +22,53 @@ const client = new Client({
 });
 
 client.once(Events.ClientReady, (c) => {
-    console.log(`✅ ${c.user.tag} is online.`);
-});
-
-client.on(Events.VoiceStateUpdate, (oldState) => {
-    const connection = getVoiceConnection(oldState.guild.id);
-    if (connection) {
-        const channel = oldState.channel;
-        if (channel && channel.members.filter(m => !m.user.bot).size === 0) {
-            connection.destroy();
-        }
-    }
+    console.log(`✅ ${c.user.tag} Online.`);
 });
 
 client.on(Events.MessageCreate, async (message) => {
     if (message.author.bot) return;
 
-    // أمر دخول الروم
+    // أمر الدخول - إزالة الدفن غصب
     if (message.content.startsWith('/join')) {
-        const member = message.member;
-        const channel = member?.voice.channel;
+        const channel = message.member?.voice.channel;
+        if (!channel) return message.reply("Join a voice channel first.");
 
-        if (!channel) return message.reply("Join a voice channel first, Casper.");
+        const connection = joinVoiceChannel({
+            channelId: channel.id,
+            guildId: channel.guild.id,
+            adapterCreator: channel.guild.voiceAdapterCreator,
+            selfDeaf: false, 
+            selfMute: false,
+        });
 
-        try {
-            joinVoiceChannel({
-                channelId: channel.id,
-                guildId: channel.guild.id,
-                adapterCreator: channel.guild.voiceAdapterCreator,
-                selfDeaf: false, 
-                selfMute: false,
-            });
+        // حل مشكلة الخروج المفاجئ (إعادة اتصال تلقائي)
+        connection.on(VoiceConnectionStatus.Disconnected, async () => {
+            try {
+                await Promise.race([
+                    new Promise((resolve) => setTimeout(resolve, 5000)),
+                ]);
+                // إذا فصل، يحاول يرجع يشبك
+            } catch (e) { connection.destroy(); }
+        });
 
-            const replies = ["I am on my way", "I am coming", "I am here"];
-            return message.reply(replies[Math.floor(Math.random() * replies.length)]);
-        } catch (error) {
-            return message.reply("Connection error.");
-        }
+        const replies = ["I am on my way", "I am coming", "I am here"];
+        return message.reply(replies[Math.floor(Math.random() * replies.length)]);
     }
 
-    // الرد على الشات
+    // الرد على الشات (منشن أو علامة تعجب)
     if (message.mentions.has(client.user!) || message.content.startsWith('!')) {
-        const userInput = message.content.replace(/<@!?\d+>/g, '').replace('!', '').trim();
-        if (!userInput) return;
+        const input = message.content.replace(/<@!?\d+>/g, '').replace('!', '').trim();
+        if (!input) return;
 
         try {
-            // أرسل النص مباشرة لملف bot.ts وخلي bot.ts هو اللي يتعامل مع الشخصية
-            const response = await chat(userInput);
-            await message.reply(response);
+            // نرسل النص لـ bot.ts وننتظر الرد
+            const response = await chat(input);
+            if (response) {
+                await message.reply(response);
+            }
         } catch (err) {
-            console.error(err);
-            await message.reply("A technical hitch!");
+            console.error("GROQ Error:", err);
+            await message.reply("Internal system error.");
         }
     }
 });
