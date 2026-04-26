@@ -6,7 +6,7 @@ import http from 'http';
 
 dotenv.config();
 
-// سيرفر عشان ريندر ما يطفي البوت
+// سيرفر وهمي عشان ريندر ما يطفي البوت
 http.createServer((req, res) => {
     res.writeHead(200);
     res.end('Toriel is Awake');
@@ -22,37 +22,45 @@ const client = new Client({
 });
 
 client.once(Events.ClientReady, (c) => {
-    console.log(`✅ ${c.user.tag} Online.`);
+    console.log(`✅ ${c.user.tag} is online and ready.`);
+});
+
+// الخروج التلقائي إذا فضي الروم
+client.on(Events.VoiceStateUpdate, (oldState) => {
+    const connection = getVoiceConnection(oldState.guild.id);
+    if (connection) {
+        const channel = oldState.channel;
+        if (channel && channel.members.filter(m => !m.user.bot).size === 0) {
+            connection.destroy();
+        }
+    }
 });
 
 client.on(Events.MessageCreate, async (message) => {
     if (message.author.bot) return;
 
-    // أمر الدخول - إزالة الدفن غصب
+    // أمر دخول الروم - حل مشكلة الدفن والميوت نهائياً
     if (message.content.startsWith('/join')) {
         const channel = message.member?.voice.channel;
-        if (!channel) return message.reply("Join a voice channel first.");
+        if (!channel) return message.reply("Join a voice channel first, Casper.");
 
-        const connection = joinVoiceChannel({
-            channelId: channel.id,
-            guildId: channel.guild.id,
-            adapterCreator: channel.guild.voiceAdapterCreator,
-            selfDeaf: false, 
-            selfMute: false,
-        });
+        try {
+            const connection = joinVoiceChannel({
+                channelId: channel.id,
+                guildId: channel.guild.id,
+                adapterCreator: channel.guild.voiceAdapterCreator,
+                selfDeaf: false, // شيل الدفن
+                selfMute: false, // شيل الميوت
+            });
 
-        // حل مشكلة الخروج المفاجئ (إعادة اتصال تلقائي)
-        connection.on(VoiceConnectionStatus.Disconnected, async () => {
-            try {
-                await Promise.race([
-                    new Promise((resolve) => setTimeout(resolve, 5000)),
-                ]);
-                // إذا فصل، يحاول يرجع يشبك
-            } catch (e) { connection.destroy(); }
-        });
+            // تأكيد ثاني لإزالة الدفن
+            connection.rejoin({ selfDeaf: false, selfMute: false });
 
-        const replies = ["I am on my way", "I am coming", "I am here"];
-        return message.reply(replies[Math.floor(Math.random() * replies.length)]);
+            const replies = ["I am on my way", "I am coming", "I am here"];
+            return message.reply(replies[Math.floor(Math.random() * replies.length)]);
+        } catch (error) {
+            return message.reply("Error connecting to voice.");
+        }
     }
 
     // الرد على الشات (منشن أو علامة تعجب)
@@ -61,14 +69,11 @@ client.on(Events.MessageCreate, async (message) => {
         if (!input) return;
 
         try {
-            // نرسل النص لـ bot.ts وننتظر الرد
+            // نطلب الرد من bot.ts
             const response = await chat(input);
-            if (response) {
-                await message.reply(response);
-            }
+            await message.reply(response);
         } catch (err) {
-            console.error("GROQ Error:", err);
-            await message.reply("Internal system error.");
+            await message.reply("A technical hitch!");
         }
     }
 });
