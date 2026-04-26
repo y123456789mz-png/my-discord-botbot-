@@ -1,14 +1,14 @@
 import { Client, GatewayIntentBits, Partials } from 'discord.js';
 import express from 'express';
 import dotenv from 'dotenv';
-import { chat } from './ai.js';
+import { chat } from './ai.js'; // تأكد إن ملف ai.js موجود في نفس مجلد src
 import { joinVoiceChannel, getVoiceConnection } from '@discordjs/voice';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 10000;
-app.get('/', (req, res) => res.send('Toriel is Adaptive!'));
+app.get('/', (req, res) => res.send('Toriel is Live!'));
 app.listen(port, '0.0.0.0', () => console.log(`Server on ${port}`));
 
 const client = new Client({
@@ -21,31 +21,26 @@ const client = new Client({
   partials: [Partials.Channel],
 });
 
-// متغير لحفظ حالة الروم
 let isInVoice = false;
 
 client.once('ready', () => {
     console.log(`✅ Logged in as ${client.user?.tag}`);
 });
 
-// نظام مراقبة الروم والنسيان
 client.on('voiceStateUpdate', (oldState, newState) => {
     const connection = getVoiceConnection(oldState.guild.id);
     if (connection) {
         const channelId = connection.joinConfig.channelId;
         const channel = oldState.guild.channels.cache.get(channelId!) as any;
-
         if (channel && channel.members.size <= 1) {
-            console.log("Room empty. Leaving and resetting context...");
             connection.destroy();
-            isInVoice = false; // هنا تنسى إنها كانت في الروم
+            isInVoice = false;
         }
     }
 });
 
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
-
   const content = message.content.trim();
 
   if (content === '/join') {
@@ -57,37 +52,24 @@ client.on('messageCreate', async (message) => {
         adapterCreator: channel.guild.voiceAdapterCreator as any,
         selfDeaf: false,
       });
-      isInVoice = true; // الحين عرفت إنها دخلت
-      return message.reply("I'm in! I'll match your language and vibe. ✨");
+      isInVoice = true;
+      return message.reply("I'm in! I'll match your language. ✨");
     }
-    return message.reply("Join a voice channel first!");
   }
 
   if (content === '/leave') {
-    const connection = getVoiceConnection(message.guildId!);
-    if (connection) {
-      connection.destroy();
-      isInVoice = false; // تصفر الذاكرة يدوياً
-      return message.reply("See ya! 👋");
-    }
+    getVoiceConnection(message.guildId!)?.destroy();
+    isInVoice = false;
+    return message.reply("See ya! 👋");
   }
 
   if (message.mentions.has(client.user!) || message.guild === null) {
-      await message.channel.sendTyping();
-
-      // إعداد الملاحظة المخفية بناءً على الحالة
-      let contextNote = "[System: Respond in the SAME language the user uses. ";
-      if (isInVoice) {
-          contextNote += "You are currently hanging out in a voice channel. Acknowledge this naturally if asked.]\n";
-      } else {
-          contextNote += "You are NOT in a voice channel right now.]\n";
-      }
-
       try {
-          const reply = await chat([{ 
-              role: "user", 
-              content: contextNote + message.content 
-          }]);
+          await message.channel.sendTyping();
+          let contextNote = "[System: Respond in the SAME language the user uses. ";
+          contextNote += isInVoice ? "You are in a voice channel.]\n" : "You are not in a voice channel.]\n";
+
+          const reply = await chat([{ role: "user", content: contextNote + message.content }]);
           await message.reply(reply);
       } catch (err) {
           console.error("AI Error:", err);
