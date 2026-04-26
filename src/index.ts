@@ -2,7 +2,7 @@ import { Client, GatewayIntentBits, Partials } from 'discord.js';
 import express from 'express';
 import * as dotenv from 'dotenv';
 import { joinVoiceChannel, getVoiceConnection } from '@discordjs/voice';
-import { chat } from './ai.js'; // هذي هي التكة اللي تخليه يشتغل في ريندر
+import { chat } from './ai.js'; 
 
 dotenv.config();
 
@@ -54,7 +54,6 @@ client.on('messageCreate', async (message) => {
       isInVoice = true;
       return message.reply("I'm in! Let's hang out. ✨");
     }
-    return message.reply("Join a voice room first!");
   }
 
   if (content === '/leave') {
@@ -66,7 +65,7 @@ client.on('messageCreate', async (message) => {
   if (message.mentions.has(client.user!) || message.guild === null) {
       await message.channel.sendTyping();
       let context = "[System: Reply in the same language as the user. ";
-      context += isInVoice ? "You are in a voice channel together.]\n" : "You are not in a voice channel.]\n";
+      context += isInVoice ? "You are in a voice channel with them.]\n" : "You are not in a voice channel.]\n";
 
       try {
           const reply = await chat([{ role: "user", content: context + message.content }]);
