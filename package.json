@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "start": "npx tsx src/index.ts"
+    "start": "node --import tsx src/index.ts",
+    "build": "pnpm install"
   },
   "dependencies": {
     "discord.js": "^14.16.3",
