@@ -2,13 +2,16 @@ import { Client, GatewayIntentBits, Partials } from 'discord.js';
 import express from 'express';
 import * as dotenv from 'dotenv';
 import { joinVoiceChannel, getVoiceConnection } from '@discordjs/voice';
-import { chat } from './ai.js'; // النقطة هذي (.js) هي اللي تخليه يشتغل في ريندر
+// ملاحظة: استخدام './ai.js' ضروري جداً هنا حتى لو كان الملف .ts
+import { chat } from './ai.js'; 
 
 dotenv.config();
 
+// سيرفر الويب لضمان استقرار البوت على Render
 const app = express();
-app.get('/', (req, res) => res.send('Toriel is Back!'));
-app.listen(process.env.PORT || 10000, '0.0.0.0');
+const port = process.env.PORT || 10000;
+app.get('/', (req, res) => res.send('Toriel is back and running! ✨'));
+app.listen(port, '0.0.0.0', () => console.log(`Server listening on port ${port}`));
 
 const client = new Client({
   intents: [
@@ -21,8 +24,11 @@ const client = new Client({
 
 let isInVoice = false;
 
-client.once('ready', () => console.log(`✅ ${client.user?.tag} IS ONLINE`));
+client.once('ready', () => {
+    console.log(`✅ Logged in as ${client.user?.tag}`);
+});
 
+// نظام الخروج التلقائي إذا فضيت الغرفة
 client.on('voiceStateUpdate', (oldState, newState) => {
     const connection = getVoiceConnection(oldState.guild.id);
     if (connection) {
@@ -38,30 +44,44 @@ client.on('voiceStateUpdate', (oldState, newState) => {
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
 
-  if (message.content === '/join') {
+  const content = message.content.trim();
+
+  // أوامر التحكم في الصوت
+  if (content === '/join') {
     const channel = message.member?.voice.channel;
     if (channel) {
       joinVoiceChannel({
         channelId: channel.id,
         guildId: channel.guild.id,
         adapterCreator: channel.guild.voiceAdapterCreator as any,
+        selfDeaf: false,
       });
       isInVoice = true;
-      return message.reply("In the room! ✨");
+      return message.reply("أبشر! أنا معك الآن في الروم الصوتي. ✨");
     }
+    return message.reply("ادخل روم صوتي أولاً يا بطل!");
   }
 
-  if (message.content === '/leave') {
+  if (content === '/leave') {
     getVoiceConnection(message.guildId!)?.destroy();
     isInVoice = false;
-    return message.reply("Bye! 👋");
+    return message.reply("في أمان الله! 👋");
   }
 
+  // الرد على المنشن أو الرسائل الخاصة باستخدام كود الـ AI حقك
   if (message.mentions.has(client.user!) || message.guild === null) {
       await message.channel.sendTyping();
-      const voiceNote = isInVoice ? "(Note: You are in a voice channel now)" : "";
-      const reply = await chat([{ role: "user", content: voiceNote + message.content }]);
-      await message.reply(reply);
+      
+      const voiceContext = isInVoice ? "[ملاحظة: أنتِ الآن في روم صوتي مع المستخدم]" : "";
+      
+      try {
+          const reply = await chat([
+            { role: "user", content: voiceContext + message.content }
+          ]);
+          await message.reply(reply);
+      } catch (err) {
+          console.error("AI Chat Error:", err);
+      }
   }
 });
 
