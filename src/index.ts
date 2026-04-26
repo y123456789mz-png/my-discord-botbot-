@@ -2,15 +2,23 @@ import { Client, GatewayIntentBits, Partials } from 'discord.js';
 import express from 'express';
 import dotenv from 'dotenv';
 import { chat } from './ai.js';
-import { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, getVoiceConnection } from '@discordjs/voice';
+import { 
+    joinVoiceChannel, 
+    createAudioPlayer, 
+    createAudioResource, 
+    AudioPlayerStatus, 
+    getVoiceConnection,
+    NoSubscriberBehavior,
+    StreamType
+} from '@discordjs/voice';
 import * as googleTTS from 'google-tts-api';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 10000;
-app.get('/', (req, res) => res.send('توريال نشطة!'));
-app.listen(port, '0.0.0.0', () => console.log(`Server running`));
+app.get('/', (req, res) => res.send('Tutorial is Live!'));
+app.listen(port, '0.0.0.0', () => console.log(`Web server active on port ${port}`));
 
 const client = new Client({
   intents: [
@@ -29,9 +37,10 @@ client.once('ready', () => console.log(`✅ Logged in as ${client.user?.tag}`));
 
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
+
   const content = message.content.trim();
 
-  // دخول الروم
+  // 1️⃣ أمر الدخول
   if (content === '/join') {
     const channel = message.member?.voice.channel;
     if (channel) {
@@ -46,7 +55,7 @@ client.on('messageCreate', async (message) => {
     return message.reply("Get in a room first!");
   }
 
-  // خروج من الروم
+  // 2️⃣ أمر الخروج
   if (content === '/leave') {
     const connection = getVoiceConnection(message.guildId!);
     if (connection) {
@@ -55,12 +64,14 @@ client.on('messageCreate', async (message) => {
     }
   }
 
-  // التحدث (تم تحسين معالجة الصوت)
+  // 3️⃣ أمر التحدث (النسخة المطورة والمضمونة)
   if (content.startsWith('/speak ')) {
     const channel = message.member?.voice.channel;
     if (channel) {
       const text = content.replace('/speak ', '').trim();
       if (!text) return;
+
+      console.log(`جارِ محاولة نطق: ${text}`);
 
       const connection = joinVoiceChannel({
         channelId: channel.id,
@@ -69,22 +80,39 @@ client.on('messageCreate', async (message) => {
         selfDeaf: false,
       });
 
-      const url = googleTTS.getAudioUrl(text, { lang: 'ar', slow: false, host: 'https://translate.google.com' });
-      
-      const player = createAudioPlayer();
-      const resource = createAudioResource(url);
+      const url = googleTTS.getAudioUrl(text, { 
+        lang: 'ar', 
+        slow: false, 
+        host: 'https://translate.google.com' 
+      });
+
+      const player = createAudioPlayer({
+        behaviors: {
+          noSubscriber: NoSubscriberBehavior.Play,
+        },
+      });
+
+      // إنشاء المصدر الصوتي مع تحديد نوع التدفق
+      const resource = createAudioResource(url, {
+        inputType: StreamType.Arbitrary,
+        inlineVolume: true
+      });
 
       player.play(resource);
       connection.subscribe(player);
 
-      // إضافة مراقب للأخطاء في الـ Logs
-      player.on('error', err => console.error('Audio Error:', err.message));
-      
+      // مراقبة الأخطاء والحالة
+      player.on(AudioPlayerStatus.Playing, () => console.log("بدأ البث الصوتي بنجاح!"));
+      player.on('error', error => {
+        console.error(`خطأ في مشغل الصوت: ${error.message}`);
+        message.channel.send("Sorry Casper, I'm having trouble speaking. Check the logs!");
+      });
+
       return;
     }
   }
 
-  // نظام السوالف
+  // 4️⃣ نظام السوالف (فقط إذا منشنته)
   const isMentioned = message.mentions.has(client.user!);
   if ((isMentioned || message.guild === null) && !processing.has(message.id)) {
     processing.add(message.id);
