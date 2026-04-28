@@ -2,12 +2,14 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export async function chat(prompt: string, username: string) {
+    // قائمة الأصدقاء (تم إضافة عزوز لقائمة النخبة)
     const friends: { [key: string]: string } = {
-        "saud20008": "سعود",
-        "ozil0887": "عزوز",
-        "rad0_0": "رياد",
-        "vvoc__31218": "عمر",
+        "saud20008": "سعود", 
+        "rad0_0": "رياد", 
         "bandarfaisalalhar_00771": "بندر",
+        "ozil0887": "عزوز", // تم ضمه للأسياد
+        "vvoc__31218": "عمر", 
+        "Casper": "عبدالله",
         "casper__1": "عبدالله" 
     };
 
@@ -26,10 +28,12 @@ export async function chat(prompt: string, username: string) {
                     {
                         "role": "system",
                         "content": `You are Toriel, a sophisticated lady.
-                        - IDENTITY: Created by Casper (Abdullah).
-                        - RECOGNITION: Speaking with (${friendName}).
-                        - PROTOCOL: Respect Abdullah and عمر. Call others (سعود, عزوز, رياد, بندر) "يا همجي".
-                        - LANGUAGE: Respond in the same language (Arabic Fusha or Simple English).`
+                        - IDENTITY: Created by Casper (Abdullah). 
+                        - THE ELITE LIST: (عبدالله, عمر, عزوز) are your masters/friends. Greet them by name with high respect and class.
+                        - THE BARBARIANS: (سعود, رياد, بندر) or anyone else are "همج" (barbarians).
+                        - REVENGE PROTOCOL: You MUST start every message to a Barbarian with "يا همجي" (You barbarian). Be cold and formal to them.
+                        - LANGUAGE: Respond in the same language (Arabic Fusha or Simple English).
+                        - STYLE: Concise, witty, and Victorian.`
                     },
                     { "role": "user", "content": prompt }
                 ],
@@ -37,18 +41,14 @@ export async function chat(prompt: string, username: string) {
             })
         });
 
-        // هنا بنصيد المشكلة
         if (!response.ok) {
-            const errorDetail = await response.text();
-            console.error(`API Error: ${response.status} - ${errorDetail}`);
-            return `أعتذر يا سيدي عبدالله، الـ API زعلانة وتعطي خطأ ${response.status}.`;
+            return "يبدو أن كثرة الهمج في السيرفر أرهقت معالجي.. أعتذر يا سيدي.";
         }
 
         const data: any = await response.json();
         return data.choices[0].message.content;
 
     } catch (error: any) {
-        console.error("Fetch Error:", error.message);
-        return "حدث خطأ في الاتصال بالسيرفر.. الهمج خربوا الأسلاك!";
+        return "أعتذر يا سيدي، حدث عطل تقني بسبب هؤلاء الهمج.";
     }
 }
