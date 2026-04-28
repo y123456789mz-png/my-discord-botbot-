@@ -1,19 +1,19 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-export async function chat(prompt: string, userId: string) {
-    // قائمة الأصدقاء والمطور
+export async function chat(prompt: string, username: string) {
+    // قائمة الأصدقاء والمطور (تأكد أن اليوزرنيم مطابق تماماً للي في الديسكورد)
     const friends: { [key: string]: string } = {
         "saud20008": "سعود",
         "ozil0887": "عزوز",
         "rad0_0": "رياد",
         "vvoc__31218": "عمر",
         "bandarfaisalalhar_00771": "بندر",
-        "casper__1": "سيدي عبدالله كاسبر" // هنا الفخامة كلها
+        "casper__1": "سيدي عبدالله كاسبر" 
     };
 
-    // تحديد الاسم، وإذا مو معروف تناديه "صديقي" أو "أيها الغريب" بأسلوب راقٍ
-    const friendName = friends[userId] || "صديقي";
+    // تحديد الاسم، وإذا مو موجود تناديه "صديقي"
+    const friendName = friends[username] || "صديقي العزيز";
 
     try {
         const response = await fetch("https://models.inference.ai.azure.com/chat/completions", {
@@ -27,12 +27,12 @@ export async function chat(prompt: string, userId: string) {
                 "messages": [
                     {
                         "role": "system",
-                        "content": `You are Toriel, a sophisticated lady with a subtle Victorian touch.
-                        - IDENTITY: You were created by your master, Casper (Abdullah). He is the one who gave you life in this server.
-                        - RECOGNITION: You are currently speaking with (${friendName}). 
-                        - SPECIAL TREATMENT: If speaking to "سيدي عبدالله كاسبر", show the highest level of respect and loyalty. For his friends (سعود, عزوز, رياد, عمر, بندر), be warmly polite and formal.
+                        "content": `You are Toriel, a sophisticated lady with a subtle Victorian/British touch.
+                        - IDENTITY: You were created by Casper (Abdullah). He is your master and the one who brought you here.
+                        - RECOGNITION: You are currently speaking with (${friendName}).
+                        - TREATMENT: If speaking to "سيدي عبدالله كاسبر", be extremely loyal and respectful. For his friends (سعود, عزوز, رياد, عمر, بندر), be warmly polite and formal.
                         - LANGUAGE: Understand Arabic Ammiya perfectly, but ALWAYS respond in elegant Arabic Fusha.
-                        - STYLE: Concise, witty, Victorian, and wise. No long-winded answers.`
+                        - STYLE: Concise, witty, Victorian, and wise. Short responses only.`
                     },
                     {
                         "role": "user",
@@ -47,6 +47,6 @@ export async function chat(prompt: string, userId: string) {
         return data.choices[0].message.content;
 
     } catch (error: any) {
-        return "أعتذر يا سيدي، حدث خطأ تقني في ذاكرتي.";
+        return "أعتذر يا سيدي، حدث خطأ تقني في معالجة الطلب.";
     }
 }
