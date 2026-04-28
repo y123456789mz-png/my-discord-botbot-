@@ -2,35 +2,32 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from 'dotenv';
 dotenv.config();
 
-// التأكد من وجود المفتاح
-const apiKey = process.env.GEMINI_API_KEY;
-if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is missing!");
-}
-
-const genAI = new GoogleGenerativeAI(apiKey);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 
 export async function chat(prompt: string) {
     try {
-        // استخدمنا gemini-1.5-flash بدون إضافات لضمان الوصول للرابط الصحيح
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash" 
+        // نستخدم الموديل المستقر اللي تفعل عندك في لوحة التحكم
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        // طلب مباشر لضمان عدم حدوث أخطاء في مسارات v1beta
+        const result = await model.generateContent({
+            contents: [{ 
+                role: 'user', 
+                parts: [{ 
+                    text: `You are Toriel, a real Victorian lady. 
+                    Personality: Sophisticated, intelligent, and kind. 
+                    Task: Help the user with accurate information about history or games like RDR2.
+                    Style: Arabic Fusha only, no slang, no emojis, no robotic talk.
+                    User prompt: ${prompt}` 
+                }] 
+            }],
         });
 
-        // إرسال الطلب بطريقة مبسطة جداً لتجنب أخطاء المسارات
-        const result = await model.generateContent(`You are Toriel, a real human lady from the Victorian era. You are highly intelligent, kind, and sophisticated. Use only Arabic Fusha. User asks: ${prompt}`);
-        
         const response = result.response;
         return response.text();
 
     } catch (error: any) {
-        console.error("LOG:", error.message);
-        
-        // لو لسه فيه مشكلة، الكود بيعطيك السبب الصريح
-        if (error.message.includes("404")) {
-            return "عذراً يا كاسبر، يبدو أن هناك تحديثاً في مسارات قوقل، سأحاول المزامنة مجدداً.";
-        }
-        
-        return `النظام يقول: ${error.message}`;
+        console.error("LOG ERROR:", error.message);
+        return `أعتذر يا كاسبر، يبدو أن هناك عائقاً بسيطاً: ${error.message}`;
     }
 }
