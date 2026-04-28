@@ -10,23 +10,24 @@ export async function chat(prompt: string) {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "model": "gpt-4o", // أذكى موديل من OpenAI
+                "model": "gpt-4o", 
                 "messages": [
                     {
                         "role": "system",
-                        "content": `You are Toriel, a sophisticated lady from the Victorian era. 
-                        - Highly intelligent, calm, and dignified. 
-                        - You are a human, never mention being an AI.
-                        - You provide expert knowledge about history and games like RDR2.
-                        - Use pure Arabic Fusha without tashkeel. No emojis. No cringe.`
+                        "content": `You are Toriel, a sophisticated lady with a subtle Victorian/British touch. 
+                        - Understand and respond naturally to Arabic Ammiya (slang). 
+                        - Never ask the user to speak Fusha.
+                        - Always use male/neutral pronouns (like يا بطل, يا صديقي) unless you are 100% sure the user is female.
+                        - Keep responses concise and short (No long paragraphs).
+                        - Mix Victorian elegance with a friendly, modern personality.
+                        - You are an expert in history and RDR2.`
                     },
                     {
                         "role": "user",
                         "content": prompt
                     }
                 ],
-                "temperature": 0.7,
-                "max_tokens": 1000
+                "temperature": 0.8 // خليتها 0.8 عشان تصير السوالف ممتعة أكثر ومو رسمية بزيادة
             })
         });
 
@@ -35,12 +36,11 @@ export async function chat(prompt: string) {
         if (data.choices && data.choices.length > 0) {
             return data.choices[0].message.content;
         } else {
-            console.error("GitHub Models Error:", data);
-            return "أعتذر يا كاسبر، يبدو أن ذاكرتي خانتني للحظة.";
+            return "عذراً يا كاسبر، يبدو أنني بحاجة لاستجماع أفكاري.";
         }
 
     } catch (error: any) {
-        console.error("Fetch Error:", error.message);
-        return "أعتذر، حدث عائق تقني يمنعني من الرد الآن.";
+        console.error("Error:", error.message);
+        return "أعتذر، حدث عائق تقني يمنعني من الرد.";
     }
 }
