@@ -1,19 +1,23 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-export async function chat(prompt: string, username: string) {
-    // قائمة الأصدقاء (تم إضافة عزوز لقائمة النخبة)
-    const friends: { [key: string]: string } = {
-        "saud20008": "سعود", 
-        "rad0_0": "رياد", 
-        "bandarfaisalalhar_00771": "بندر",
-        "ozil0887": "عزوز", // تم ضمه للأسياد
-        "vvoc__31218": "عمر", 
-        "Casper": "عبدالله",
-        "casper__1": "عبدالله" 
+export async function chat(prompt: string, userId: string) {
+    // استبدل هذه الأرقام بالـ IDs الحقيقية اللي نسختها بالـ كليك يمين
+    const eliteIds = [
+        "123456789", // الـ ID حقك (عبدالله)
+        "987654321", // الـ ID حق عمر
+        "112233445"  // الـ ID حق عزوز
+    ];
+
+    // قائمة الأسماء للترحيب بالفئة الـ VIP
+    const names: { [key: string]: string } = {
+        "123456789": "عبدالله",
+        "987654321": "عمر",
+        "112233445": "عزوز"
     };
 
-    const friendName = friends[username] || "أيها الغريب";
+    const isElite = eliteIds.includes(userId);
+    const friendName = names[userId] || "أيها الهمجي";
 
     try {
         const response = await fetch("https://models.inference.ai.azure.com/chat/completions", {
@@ -27,28 +31,20 @@ export async function chat(prompt: string, username: string) {
                 "messages": [
                     {
                         "role": "system",
-                        "content": `You are Toriel, a sophisticated lady.
-                        - IDENTITY: Created by Casper (Abdullah). 
-                        - THE ELITE LIST: (عبدالله, عمر, عزوز) are your masters/friends. Greet them by name with high respect and class.
-                        - THE BARBARIANS: (سعود, رياد, بندر) or anyone else are "همج" (barbarians).
-                        - REVENGE PROTOCOL: You MUST start every message to a Barbarian with "يا همجي" (You barbarian). Be cold and formal to them.
-                        - LANGUAGE: Respond in the same language (Arabic Fusha or Simple English).
-                        - STYLE: Concise, witty, and Victorian.`
+                        "content": `You are Toriel, a sophisticated lady. 
+                        - If the user ID is in the elite list: Greet them as (${friendName}) with high respect.
+                        - If the user is NOT in the elite list: You MUST call them "يا همجي" (You barbarian) and be very rude/cold.
+                        - Language: Same as user. Style: Concise.`
                     },
                     { "role": "user", "content": prompt }
-                ],
-                "temperature": 0.7
+                ]
             })
         });
-
-        if (!response.ok) {
-            return "يبدو أن كثرة الهمج في السيرفر أرهقت معالجي.. أعتذر يا سيدي.";
-        }
 
         const data: any = await response.json();
         return data.choices[0].message.content;
 
     } catch (error: any) {
-        return "أعتذر يا سيدي، حدث عطل تقني بسبب هؤلاء الهمج.";
+        return "أعتذر يا سيدي، هؤلاء الهمج تسببوا في عطل فني.";
     }
 }
