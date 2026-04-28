@@ -1,18 +1,9 @@
-{
-  "name": "toriel-bot",
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "start": "node --import tsx index.ts",
-    "build": "pnpm install"
-  },
-  "dependencies": {
-    "discord.js": "^14.16.3",
+"dependencies": {
     "@discordjs/voice": "^0.17.0",
-    "dotenv": "^16.4.5",
-    "express": "^4.18.2",
+    "@google/generative-ai": "^0.21.0",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.1",
     "groq-sdk": "^0.3.3",
-    "libsodium-wrappers": "^0.7.13",
-    "tsx": "^4.19.1"
+    "http": "^0.0.1-security",
+    "tsx": "^4.7.1"
   }
-}
