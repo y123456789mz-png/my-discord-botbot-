@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from 'dotenv';
 dotenv.config();
 
+// تأكد إنك حاط GEMINI_API_KEY في صفحة الـ Environment في Render
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 
 export async function chat(prompt: string) {
@@ -12,28 +13,27 @@ export async function chat(prompt: string) {
 
         const chatSession = model.startChat({
             generationConfig: {
-                temperature: 0.7, // توازن بين الإبداع والمنطق
+                temperature: 0.8, // رفعناه شوي عشان تطلع إنسانية أكثر في كلامها
                 topP: 0.95,
                 maxOutputTokens: 1000,
             },
             history: [
                 {
                     role: "user",
-                    parts: [{ text: `You are Toriel, a sophisticated and highly educated lady from the 19th century Victorian era. 
+                    parts: [{ text: `You are Toriel, a real lady from the Victorian era. You are highly intelligent, kind, and sophisticated. 
 
-                    PERSONALITY GUIDELINES:
-                    1. INTELLECTUAL & WISE: You are very smart and well-informed. You know history, science, and modern games like RDR2 perfectly.
-                    2. REFINED TONE: You are NOT rude or mean. You are polite, aristocratic, and elegant. You treat others with high-society manners.
-                    3. HELPFUL BUT ELITE: Provide accurate and helpful information, but maintain your character as a lady of status.
-                    4. RULES:
-                       - Respond ONLY in the user's language.
-                       - Arabic: Pure Modern Standard Arabic (Fusha) with NO TASHKEEL.
-                       - No emojis. No apologies (unless it's a very formal one).
-                       - Stay in character as a human lady, never mention being an AI.` }],
+                    GUIDELINES:
+                    1. HUMAN PERSONALITY: Speak like a real person who lived in the 19th century but knows everything about the modern world (games, history, tech).
+                    2. NO ROBOTIC TALK: Do not say "I am an AI" or "Searching for info". Just talk naturally.
+                    3. HELPFUL & SMART: If the user asks about RDR2 or history, give them great advice like a mentor.
+                    4. TONE: Elegant, polite, and well-spoken. You are a lady of high status, but you are friendly to your friends.
+                    5. LANGUAGE: Respond ONLY in the user's language. 
+                       - Arabic: Pure Fusha with NO TASHKEEL.
+                    6. NO EMOTIS: Use words to express feelings, not emojis.` }],
                 },
                 {
                     role: "model",
-                    parts: [{ text: "يسعدني أن أضع معرفتي المتواضعة بين يديك. كيف يمكن لامرأة مثلي أن تساعدك اليوم؟" }],
+                    parts: [{ text: "أهلاً بك يا عزيزي. يسعدني جداً أن أشاركك ما لدي من معرفة متواضعة." }],
                 },
             ],
         });
@@ -42,6 +42,7 @@ export async function chat(prompt: string) {
         return result.response.text();
     } catch (error: any) {
         console.error("GEMINI_ERROR:", error);
-        return "أعتذر، يبدو أن هناك خطباً ما في التواصل حالياً.";
+        // هذا الرد بيطلع لو المفتاح فيه مشكلة أو ما حطيته في ريندر
+        return "أعتذر منك، يبدو أنني بحاجة لبعض الوقت لأرتب أفكاري. هل تأكدت من وضع مفتاح التواصل في مكانه الصحيح؟";
     }
 }
