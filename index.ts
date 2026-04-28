@@ -1,78 +1,53 @@
-import { Client, GatewayIntentBits, Events } from 'discord.js';
-import { joinVoiceChannel, getVoiceConnection } from '@discordjs/voice';
-import { chat } from './bot.ts'; 
+import { Client, GatewayIntentBits, Message } from 'discord.js';
 import dotenv from 'dotenv';
-import http from 'http';
+import { chat } from './bot'; // تأكد أن ملف bot.ts في نفس المجلد
 
 dotenv.config();
-
-// التعديل هنا: نخليه يسمع للـ Port اللي يطلبه Render عشان ما يفصل
-const port = process.env.PORT || 10000;
-http.createServer((req, res) => {
-    res.writeHead(200);
-    res.end('Toriel is Live and Arrogant!');
-}).listen(port, () => {
-    console.log(`📡 Web server is listening on port ${port}`);
-});
 
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildVoiceStates,
     ],
 });
 
-client.once(Events.ClientReady, (c) => {
-    console.log(`✅ ${c.user.tag} is online and functioning properly.`);
+client.once('ready', () => {
+    console.log(`✅ توريال أونلاين! سجلت الدخول باسم: ${client.user?.tag}`);
+    console.log("نظام 'الهمج' مفعل وجاهز للقصف.. 🎩💀");
 });
 
-client.on(Events.VoiceStateUpdate, (oldState) => {
-    const connection = getVoiceConnection(oldState.guild.id);
-    if (connection) {
-        const channel = oldState.channel;
-        if (channel && channel.members.filter(m => !m.user.bot).size === 0) {
-            connection.destroy();
-        }
-    }
-});
-
-client.on(Events.MessageCreate, async (message) => {
+client.on('messageCreate', async (message: Message) => {
+    // 1. تجاهل رسائل البوتات عشان ما يسوون حلقة مفرغة
     if (message.author.bot) return;
 
-    if (message.content.startsWith('/join')) {
-        const channel = message.member?.voice.channel;
-        if (!channel) return message.reply("Join a voice channel first, Casper.");
+    // 2. البوت يرد فقط إذا تم منشنته (Tag)
+    if (message.mentions.has(client.user!)) {
+        
+        // تنظيف الرسالة من المنشن عشان يبقى النص فقط
+        const prompt = message.content.replace(`<@${client.user?.id}>`, '').trim();
 
-        try {
-            const connection = joinVoiceChannel({
-                channelId: channel.id,
-                guildId: channel.guild.id,
-                adapterCreator: channel.guild.voiceAdapterCreator,
-                selfDeaf: false, 
-                selfMute: false,
-            });
-            // حل الدفن النهائي
-            connection.rejoin({ selfDeaf: false, selfMute: false });
-            return message.reply("I am on my way");
-        } catch (error) {
-            return message.reply("Error connecting to voice.");
+        if (!prompt) {
+            return message.reply("يا همجي، هل ستمنشنني دون قول شيء؟");
         }
-    }
-
-    // الرد إذا تم ذكر البوت أو استخدام علامة "!"
-    if (message.mentions.has(client.user!) || message.content.startsWith('!')) {
-        const input = message.content.replace(/<@!?\d+>/g, '').replace('!', '').trim();
-        if (!input) return;
 
         try {
-            const response = await chat(input);
+            // إظهار أن البوت "يكتب الآن" لحركة فخمة
+            await message.channel.sendTyping();
+
+            // --- السطر السحري ---
+            // نرسل نص الرسالة + ID المستخدم الرقمي (message.author.id)
+            const response = await chat(prompt, message.author.id);
+
+            // الرد على المستخدم
             await message.reply(response);
-        } catch (err) {
-            await message.reply("A technical hitch!");
+
+        } catch (error) {
+            console.error("Error in index.ts:", error);
+            await message.reply("أعتذر يا سيدي عبدالله، حدث عطل تقني مفاجئ.");
         }
     }
 });
 
+// تسجيل الدخول باستخدام التوكن الخاص بديسكورد من ملف .env
 client.login(process.env.DISCORD_TOKEN);
