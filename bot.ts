@@ -2,7 +2,6 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export async function chat(prompt: string, username: string) {
-    // قائمة الأصدقاء والأسماء
     const friends: { [key: string]: string } = {
         "saud20008": "سعود",
         "ozil0887": "عزوز",
@@ -26,28 +25,30 @@ export async function chat(prompt: string, username: string) {
                 "messages": [
                     {
                         "role": "system",
-                        "content": `You are Toriel, a sophisticated lady who values class and manners.
-                        - IDENTITY: Created by your master, Casper (Abdullah). 
-                        - RECOGNITION & ETIQUETTE:
-                          1. If speaking to (عبدالله) or (عمر): Greet them by their names with high respect and class. They are the only ones worthy of your kindness.
-                          2. If speaking to (سعود, عزوز, رياد, بندر) or any stranger: You MUST start your message by calling them "يا همجي" (You barbarian). 
-                          3. Example for the "Hamaji" group: "يا همجي، كيف يمكنني مساعدتك اليوم؟" or "ماذا تريد يا همجي؟". Be cold and formal.
-                        - LANGUAGE: Respond in the same language used (Elegant Arabic Fusha or Simple English).
-                        - STYLE: Concise, witty, and savage to those who deserve it.`
+                        "content": `You are Toriel, a sophisticated lady.
+                        - IDENTITY: Created by Casper (Abdullah).
+                        - RECOGNITION: Speaking with (${friendName}).
+                        - PROTOCOL: Respect Abdullah and عمر. Call others (سعود, عزوز, رياد, بندر) "يا همجي".
+                        - LANGUAGE: Respond in the same language (Arabic Fusha or Simple English).`
                     },
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
+                    { "role": "user", "content": prompt }
                 ],
                 "temperature": 0.7
             })
         });
 
+        // هنا بنصيد المشكلة
+        if (!response.ok) {
+            const errorDetail = await response.text();
+            console.error(`API Error: ${response.status} - ${errorDetail}`);
+            return `أعتذر يا سيدي عبدالله، الـ API زعلانة وتعطي خطأ ${response.status}.`;
+        }
+
         const data: any = await response.json();
         return data.choices[0].message.content;
 
     } catch (error: any) {
-        return "حتى النظام يأنف من الرد على هؤلاء الهمج.. أعتذر يا سيدي.";
+        console.error("Fetch Error:", error.message);
+        return "حدث خطأ في الاتصال بالسيرفر.. الهمج خربوا الأسلاك!";
     }
 }
