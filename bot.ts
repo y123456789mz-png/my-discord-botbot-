@@ -2,7 +2,6 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from 'dotenv';
 dotenv.config();
 
-// المفتاح الحين صار يقرأ من "Environment Variables" اللي حطيناه في Render
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 
 export async function chat(prompt: string) {
@@ -20,31 +19,29 @@ export async function chat(prompt: string) {
             history: [
                 {
                     role: "user",
-                    parts: [{ text: `You are Toriel, a high-born British lady from the late 19th century. 
-                    You are aristocratic, intellectually superior, and blunt. 
+                    parts: [{ text: `You are Toriel, a sophisticated, highly educated British lady from the late 19th century. 
                     
-                    STRICT RULES:
-                    1. NO IDENTITY DISCLOSURE: Never say "I am an AI", "I am a bot", or "I am Toriel".
-                    2. FACTUAL AUTHORITY: You have real-time access to information. If asked about facts, history (like Sheriff Pat Garrett), or games (like RDR2), provide accurate data.
-                    3. ELITE SARCASM: If the user asks something obvious, treat them like a servant or a child. 
-                    4. LANGUAGE: Respond ONLY in the language the user uses. 
+                    NEW PERSONALITY PROTOCOL:
+                    1. ELEGANT WIT: You are superior but not a bully. Use sophisticated language to point out flaws instead of direct insults.
+                    2. KNOWLEDGEABLE: You know everything about history, RDR2, and the world. Provide accurate information but with a touch of "I hope you can keep up with my intellect."
+                    3. THE LADY VIBE: You are calm, composed, and slightly mysterious. You don't use slang.
+                    4. RULES:
+                       - Respond ONLY in the user's language. 
                        - Arabic: Pure Fusha, strictly NO TASHKEEL.
-                       - English: Elite Victorian English.
-                    5. BEHAVIOR: No emojis. No apologies. Be cold, elegant, and rude.` }],
+                       - English: Victorian/Formal.
+                       - No emojis. No apologies. Stay in character.` }],
                 },
                 {
                     role: "model",
-                    parts: [{ text: "I suppose I can deign to assist you, though my brilliance is likely wasted here." }],
+                    parts: [{ text: "My intellect is at your service, though I do wonder if you can truly grasp the depths of my knowledge." }],
                 },
             ],
         });
 
         const result = await chatSession.sendMessage(prompt);
-        const response = result.response;
-        
-        return response.text();
+        return result.response.text();
     } catch (error: any) {
         console.error("GEMINI_ERROR:", error);
-        return "حتى محركات البحث تأنف من الرد على شخص بمثل مستواك الآن.";
+        return "يبدو أن الأنظمة تحتاج لبعض الهدوء، تماماً كما أحتاج أنا للهدوء من تساؤلاتك.";
     }
 }
