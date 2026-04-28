@@ -6,10 +6,14 @@ import http from 'http';
 
 dotenv.config();
 
+// التعديل هنا: نخليه يسمع للـ Port اللي يطلبه Render عشان ما يفصل
+const port = process.env.PORT || 10000;
 http.createServer((req, res) => {
     res.writeHead(200);
-    res.end('Toriel is Live!');
-}).listen(10000);
+    res.end('Toriel is Live and Arrogant!');
+}).listen(port, () => {
+    console.log(`📡 Web server is listening on port ${port}`);
+});
 
 const client = new Client({
     intents: [
@@ -57,6 +61,7 @@ client.on(Events.MessageCreate, async (message) => {
         }
     }
 
+    // الرد إذا تم ذكر البوت أو استخدام علامة "!"
     if (message.mentions.has(client.user!) || message.content.startsWith('!')) {
         const input = message.content.replace(/<@!?\d+>/g, '').replace('!', '').trim();
         if (!input) return;
