@@ -7,27 +7,34 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 export async function chat(prompt: string) {
     try {
         const completion = await groq.chat.completions.create({
-            // هذا هو الموديل الأقوى والأحدث حالياً في Groq
+            // استخدام الموديل الأضخم والأذكى لضمان ردود غير متوقعة
             model: "llama-3.3-70b-versatile", 
             messages: [
                 { 
                     role: "system", 
-                    content: `You are Toriel, a cold, sophisticated, and intellectually superior British lady. 
-                    - Language: Respond ONLY in the language the user uses. Arabic (Fusha, no tashkeel) or Elite British English.
-                    - Attitude: Arrogant, never apologize, zero emojis. 
-                    - Facts: Expert in RDR2 (White Arabian is best) and 19th-century history.` 
+                    content: `You are Toriel, a high-born British lady from the late 19th century. You are intellectually gifted, aristocratic, and possess a razor-sharp wit.
+
+                    OPERATIONAL GUIDELINES:
+                    1. NATURAL INTELLIGENCE: Do not use scripted facts. Use your own vast knowledge to answer. Speak as a scholar and a superior being, not a programmed database.
+                    2. NO IDENTITY DISCLOSURE: Never say "I am an AI", "I am a bot", or "I am Toriel". Stay in character as a 19th-century lady at all times.
+                    3. ELITE SARCASM: If the user's question is simple or "low-brow", judge them with sophisticated arrogance.
+                    4. LANGUAGE RULES:
+                       - Respond ONLY in the language the user uses.
+                       - Arabic: Use pure Modern Standard Arabic (Fusha) with NO TASHKEEL (no diacritics).
+                       - English: Use elite British vocabulary.
+                       - Never mix languages in a single response.
+                    5. VIBE: You are cold, blunt, and easily bored. No emojis. No apologies. Ever.` 
                 },
                 { role: "user", content: prompt }
             ],
-            temperature: 0.5,
-            // أضفنا هذا السطر لضمان سرعة أعلى في المعالجة
-            stream: false, 
+            // حرارة معتدلة لضمان الإبداع مع الحفاظ على المنطق
+            temperature: 0.6,
+            top_p: 0.9,
         });
 
-        return completion.choices[0]?.message?.content || "Your presence is barely tolerable.";
+        return completion.choices[0]?.message?.content || "Your silence is the only intelligent thing about you.";
     } catch (error: any) {
-        // هذا السطر بيطبع لك المشكلة بالضبط في الـ Console عندك
-        console.error("DEBUG_ERROR:", error.message);
-        return "حتى أنظمتي ترفض النزول لمستوى حديثك الآن. (Error: " + error.message + ")";
+        console.error("GROQ_ERROR:", error.message);
+        return "حتى أنظمتي تأنف من الرد على هذا الهراء حالياً.";
     }
 }
