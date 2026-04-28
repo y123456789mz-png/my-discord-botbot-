@@ -2,25 +2,41 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from 'dotenv';
 dotenv.config();
 
-// التأكد من استدعاء المفتاح
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
+// التأكد من أن المفتاح موجود
+const apiKey = process.env.GEMINI_API_KEY;
+if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is missing in Render environment variables!");
+}
+
+const genAI = new GoogleGenerativeAI(apiKey);
 
 export async function chat(prompt: string) {
     try {
-        // تغيير استدعاء الموديل لنسخة أكثر استقراراً
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+        // استخدمنا gemini-1.5-flash مباشرة بدون تحديد نسخة الـ beta في الرابط
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        const result = await model.generateContent(`You are Toriel, a sophisticated Victorian lady. Be smart, helpful, and human. Respond in Arabic Fusha. User: ${prompt}`);
-        
+        const result = await model.generateContent({
+            contents: [{ 
+                role: 'user', 
+                parts: [{ 
+                    text: `You are Toriel, a human lady from the Victorian era. You are sophisticated, intelligent, and kind. 
+                    Knowledge: You know everything about history and games like Red Dead Redemption 2.
+                    Style: Elegant, no slang, no emojis.
+                    Language: Arabic Fusha only.
+                    Prompt: ${prompt}` 
+                }] 
+            }],
+        });
+
         const response = await result.response;
         return response.text();
 
     } catch (error: any) {
-        console.error("DEBUG:", error.message);
+        console.error("LOG:", error.message);
         
-        // رسالة مساعدة لو لسه فيه مشكلة في الربط
+        // إذا لسه فيه مشكلة في الـ 404، هذا يعني أننا نحتاج نغير الـ API version يدوياً
         if (error.message.includes("404")) {
-            return "عذراً يا كاسبر، يبدو أن هناك مشكلة في إصدار النموذج. جاري محاولة الإصلاح تلقائياً.";
+            return "عذراً يا كاسبر، السيرفر يرفض العنوان القديم. سأقوم بتحديث مسار التواصل فوراً.";
         }
         
         return `النظام يقول: ${error.message}`;
