@@ -1,9 +1,24 @@
-"dependencies": {
+{
+  "name": "my-discord-bot",
+  "version": "1.0.0",
+  "description": "Toriel Bot with Gemini AI Integration",
+  "main": "index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "node --import tsx index.ts",
+    "build": "pnpm install"
+  },
+  "dependencies": {
     "@discordjs/voice": "^0.17.0",
     "@google/generative-ai": "^0.21.0",
     "discord.js": "^14.14.1",
     "dotenv": "^16.4.1",
     "groq-sdk": "^0.3.3",
-    "http": "^0.0.1-security",
+    "libsodium-wrappers": "^0.7.13",
+    "opusscript": "^0.0.8",
     "tsx": "^4.7.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
+}
