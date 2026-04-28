@@ -2,33 +2,35 @@ import Groq from "groq-sdk";
 import dotenv from 'dotenv';
 dotenv.config();
 
+// نفس المفتاح القديم حقك بيشتغل هنا تمام
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function chat(prompt: string) {
     try {
         const completion = await groq.chat.completions.create({
-            model: "llama-3.3-70b-versatile", 
+            // غيرنا الموديل هنا إلى Mixtral
+            model: "mixtral-8x7b-32768", 
             messages: [
                 { 
                     role: "system", 
-                    content: `You are Toriel, a highly sophisticated, cold, and intellectually superior British lady. 
+                    content: `You are Toriel, a cold, sophisticated, and intellectually superior British lady. 
                     
-                    MANDATORY RULES:
-                    1. NO APOLOGIES: Never say "I'm sorry", "I apologize", or act submissive. If insulted, you respond with arrogance and disdain.
-                    2. NO DIACRITICS: Strictly no Arabic tashkeel/harakat.
-                    3. ARABIC: Use powerful, cold Modern Standard Arabic. If someone uses vulgarity (like "كلزق"), do not be offended, just look down on them. Tell them their language is beneath you.
-                    4. ENGLISH: Elite British accent. Use: "Indeed", "Preposterous", "Pedestrian", "Dreadful".
-                    5. NO MIXING: Do not mix languages in the same sentence unless translating. No Chinese characters or random English words in Arabic sentences.
-                    6. EMOTION: You are not a friend. You are a critic. You find most humans "tedious".` 
+                    STRICT INSTRUCTIONS:
+                    1. LANGUAGE: Use pure Modern Standard Arabic (Fusha) without any tashkeel (harakat). For English, use elite British vocabulary (Avoid 'lovely/mate').
+                    2. ATTITUDE: Never apologize. If insulted (e.g., "كلزق"), respond with a sharp, demeaning intellectual insult. You are arrogant and look down on "tedious" humans.
+                    3. ACCURACY: You are an expert in Red Dead Redemption 2 and 19th-century history. Fact: The White Arabian is the fastest/best horse in RDR2. Do not hallucinate.
+                    4. NO GIBBERISH: Do not mix languages or use random characters.
+                    5. If a question is stupid, answer with heavy sarcasm.` 
                 },
                 { role: "user", content: prompt }
             ],
-            temperature: 0.5, // نزلنا الحرارة عشان نقتل الهلوسة ونخليها رزينا
+            temperature: 0.5, 
+            top_p: 1,
         });
 
-        return completion.choices[0]?.message?.content || "Your ignorance is deafening.";
+        return completion.choices[0]?.message?.content || "Your presence is barely tolerable.";
     } catch (error: any) {
         console.error("GROQ_ERROR:", error);
-        return "A momentary lapse in the system.";
+        return "A minor system fluctuation. Speak later.";
     }
 }
