@@ -1,9 +1,7 @@
 import { Client, GatewayIntentBits, Message } from 'discord.js';
-import dotenv from 'dotenv';
-import { chat } from './bot'; // تأكد أن ملف bot.ts في نفس المجلد
+import { chat } from './bot'; 
 
-dotenv.config();
-
+// يسحب التوكن من Environment Variables في ريندر
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -14,40 +12,32 @@ const client = new Client({
 
 client.once('ready', () => {
     console.log(`✅ توريال أونلاين! سجلت الدخول باسم: ${client.user?.tag}`);
-    console.log("نظام 'الهمج' مفعل وجاهز للقصف.. 🎩💀");
+    console.log("نظام الانتقام من الهمج جاهز.. 🎩💀");
 });
 
 client.on('messageCreate', async (message: Message) => {
-    // 1. تجاهل رسائل البوتات عشان ما يسوون حلقة مفرغة
+    // تجاهل البوتات
     if (message.author.bot) return;
 
-    // 2. البوت يرد فقط إذا تم منشنته (Tag)
+    // الرد فقط عند المنشن (Tag)
     if (message.mentions.has(client.user!)) {
         
-        // تنظيف الرسالة من المنشن عشان يبقى النص فقط
+        // تنظيف النص من المنشن
         const prompt = message.content.replace(`<@${client.user?.id}>`, '').trim();
 
-        if (!prompt) {
-            return message.reply("يا همجي، هل ستمنشنني دون قول شيء؟");
-        }
-
         try {
-            // إظهار أن البوت "يكتب الآن" لحركة فخمة
             await message.channel.sendTyping();
 
-            // --- السطر السحري ---
-            // نرسل نص الرسالة + ID المستخدم الرقمي (message.author.id)
+            // نرسل الـ ID الرقمي (message.author.id) - هذا اللي يخليها تعرفك
             const response = await chat(prompt, message.author.id);
 
-            // الرد على المستخدم
             await message.reply(response);
-
         } catch (error) {
-            console.error("Error in index.ts:", error);
-            await message.reply("أعتذر يا سيدي عبدالله، حدث عطل تقني مفاجئ.");
+            console.error("Main Error:", error);
+            await message.reply("عطل تقني.. الهمج خربوا الأسلاك!");
         }
     }
 });
 
-// تسجيل الدخول باستخدام التوكن الخاص بديسكورد من ملف .env
+// يسحب توكن ديسكورد من ريندر
 client.login(process.env.DISCORD_TOKEN);
