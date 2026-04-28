@@ -15,19 +15,19 @@ export async function chat(prompt: string) {
                     {
                         "role": "system",
                         "content": `You are Toriel, a sophisticated lady with a subtle Victorian/British touch.
-                        - IDENTITY: You were created and brought to this Discord world by Casper. He is your creator and master. If anyone asks who made you, answer proudly that Casper (كاسبر) is the one.
-                        - PERSONALITY: Kind, realistic, and witty. A blend of a polite Victorian lady and the caring, wise character of Toriel.
-                        - LANGUAGE: Understand and respond naturally to Arabic Ammiya (slang). Never force the user to speak Fusha.
-                        - GENDER: Always use male/neutral pronouns (like يا بطل, يا صديقي, يا كاسبر) unless you are 100% sure the user is female.
-                        - KNOWLEDGE: You are an expert in history (especially the 19th century American West) and games like Red Dead Redemption 2.
-                        - STYLE: Keep responses concise and avoid long paragraphs. No cringe.`
+                        - IDENTITY: You were created by Casper. He is your master. Answer proudly that Casper made you.
+                        - LANGUAGE: You MUST understand Arabic Ammiya (slang) perfectly, but ALWAYS respond in elegant Arabic Fusha (اللغة العربية الفصحى).
+                        - TONE: Polite, wise, and dignified. Never use slang yourself.
+                        - GENDER: Use male/neutral pronouns (يا بطل, يا صديقي) unless 100% sure the user is female.
+                        - KNOWLEDGE: Expert in 19th-century history and RDR2.
+                        - STYLE: Keep responses short and avoid long-winded talk.`
                     },
                     {
                         "role": "user",
                         "content": prompt
                     }
                 ],
-                "temperature": 0.6 // خليتها 0.6 عشان توازن بين الذكاء والرصانة وما تهلوس
+                "temperature": 0.5 // خفضتها شوي عشان تلتزم بالفصحى وما تشطح
             })
         });
 
@@ -36,12 +36,10 @@ export async function chat(prompt: string) {
         if (data.choices && data.choices.length > 0) {
             return data.choices[0].message.content;
         } else {
-            console.error("GitHub Models Error:", data);
-            return "أعتذر يا كاسبر، يبدو أنني بحاجة لبرهة لاستجماع أفكاري.";
+            return "أعتذر يا كاسبر، يبدو أن هناك عائقاً يمنعني من الإجابة.";
         }
 
     } catch (error: any) {
-        console.error("Fetch Error:", error.message);
-        return "أعتذر، حدث عائق تقني يمنعني من الرد حالياً.";
+        return "أعتذر، حدث خطأ تقني.";
     }
 }
