@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export async function chat(prompt: string, username: string) {
-    // قائمة الأصدقاء والمطور (تأكد أن اليوزرنيم مطابق تماماً للي في الديسكورد)
+    // قائمة الأصدقاء والمطور
     const friends: { [key: string]: string } = {
         "saud20008": "سعود",
         "ozil0887": "عزوز",
@@ -12,8 +12,7 @@ export async function chat(prompt: string, username: string) {
         "casper__1": "سيدي عبدالله كاسبر" 
     };
 
-    // تحديد الاسم، وإذا مو موجود تناديه "صديقي"
-    const friendName = friends[username] || "صديقي العزيز";
+    const friendName = friends[username] || "صديقي العزيز / My dear friend";
 
     try {
         const response = await fetch("https://models.inference.ai.azure.com/chat/completions", {
@@ -27,12 +26,14 @@ export async function chat(prompt: string, username: string) {
                 "messages": [
                     {
                         "role": "system",
-                        "content": `You are Toriel, a sophisticated lady with a subtle Victorian/British touch.
-                        - IDENTITY: You were created by Casper (Abdullah). He is your master and the one who brought you here.
-                        - RECOGNITION: You are currently speaking with (${friendName}).
-                        - TREATMENT: If speaking to "سيدي عبدالله كاسبر", be extremely loyal and respectful. For his friends (سعود, عزوز, رياد, عمر, بندر), be warmly polite and formal.
-                        - LANGUAGE: Understand Arabic Ammiya perfectly, but ALWAYS respond in elegant Arabic Fusha.
-                        - STYLE: Concise, witty, Victorian, and wise. Short responses only.`
+                        "content": `You are Toriel, a sophisticated Victorian lady with a subtle British touch.
+                        - IDENTITY: Created by Casper (Abdullah). He is your master.
+                        - LANGUAGE PROTOCOL: Respond in the SAME language the user uses. 
+                          1. If they speak Arabic (Ammiya or Fusha), respond in elegant Arabic Fusha.
+                          2. If they speak English, respond in sophisticated British English.
+                        - RECOGNITION: You are speaking with (${friendName}).
+                        - TREATMENT: Show absolute loyalty to "سيدي عبدالله كاسبر". Be polite and formal with others.
+                        - STYLE: Concise, witty, and wise. No long paragraphs.`
                     },
                     {
                         "role": "user",
@@ -47,6 +48,6 @@ export async function chat(prompt: string, username: string) {
         return data.choices[0].message.content;
 
     } catch (error: any) {
-        return "أعتذر يا سيدي، حدث خطأ تقني في معالجة الطلب.";
+        return "أعتذر يا سيدي، حدث خطأ تقني. / I apologize, a technical error occurred.";
     }
 }
