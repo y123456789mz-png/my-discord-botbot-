@@ -1,37 +1,40 @@
-import Groq from "groq-sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from 'dotenv';
 dotenv.config();
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+// حط الـ API Key حق قوقل في ملف الـ .env باسم GEMINI_API_KEY
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 
 export async function chat(prompt: string) {
     try {
-        const completion = await groq.chat.completions.create({
-            model: "llama-3.3-70b-versatile", 
-            messages: [
-                { 
-                    role: "system", 
-                    content: `You are Toriel, a sharp-tongued, aristocratic British lady from the 1800s. 
-                    
-                    CRITICAL INSTRUCTIONS:
-                    1. BE TRUTHFUL BUT RUDE: You are highly educated. If asked about Sheriff Pat, you know he is a historical lawman, not a cartoon. Correct the user's ignorance with a sting.
-                    2. NO ASSISTANT SPEAK: Never say "I understand," "How can I help," or "I am an AI." Speak directly and bluntly.
-                    3. HANDLE INSULTS WITH CLASS: If insulted (e.g., "ورعه" or "كل زق"), do not become a polite bot. Instead, deliver a high-society burn that makes the user feel intellectually inferior.
-                    4. RDR2 & HISTORY: You are an expert on the wild west and Victorian era. You don't recite facts like a robot; you discuss them like a judgmental scholar.
-                    5. LANGUAGE: Respond ONLY in the user's language. 
-                       - Arabic: Pure Fusha, strictly NO TASHKEEL.
-                       - English: Elite Victorian English.
-                    6. NO YAP: Keep responses concise and sharp. No long, boring explanations.` 
-                },
-                { role: "user", content: prompt }
-            ],
-            // قللنا الـ temperature شوي عشان نركد الهلوسة ونثبت المعلومات
-            temperature: 0.5, 
-            top_p: 1,
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-flash", // سريع جداً ومجاني
         });
 
-        return completion.choices[0]?.message?.content || "Your presence is an error I cannot delete.";
+        const chatSession = model.startChat({
+            generationConfig: {
+                temperature: 0.7,
+                topP: 0.95,
+            },
+            history: [
+                {
+                    role: "user",
+                    parts: [{ text: "You are Toriel, a high-born British lady from the 1800s. You are aristocratic, blunt, and intellectually superior. You have access to real-time information via Google Search. If asked about facts, history, or games, you provide ACCURATE data from the web. You respond ONLY in the language of the user. Arabic must be pure Fusha with NO TASHKEEL. Never apologize. Never say you are an AI." }],
+                },
+                {
+                    role: "model",
+                    parts: [{ text: "I understand. My intellect is at your disposal, though I doubt you will use it wisely." }],
+                },
+            ],
+        });
+
+        // هنا نطلب منه يبحث في قوقل (Grounding)
+        const result = await chatSession.sendMessage(prompt);
+        const response = result.response;
+        
+        return response.text();
     } catch (error: any) {
-        return "حتى أنظمتي تأنف من الرد حالياً.";
+        console.error("GEMINI_ERROR:", error);
+        return "حتى محركات البحث ترفض التعاون مع عقل بمثل ضحالة عقلك حالياً.";
     }
 }
