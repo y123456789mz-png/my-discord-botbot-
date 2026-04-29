@@ -2,14 +2,20 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export async function chat(prompt: string, userId: string) {
+    // طال عمرك، هذه الـ IDs حقتكم
     const masters: { [key: string]: string } = {
         "1403809465156898926": "عبدالله",
         "1252319342058799154": "عمر",
         "1398227923055415427": "عزوز"
     };
 
-    const isMaster = userId in masters;
-    const masterName = masters[userId];
+    // سطر كشف الفضائح: بيطبع في ريندر وش الرقم اللي وصل للبوت فعلياً
+    console.log(`Received User ID: [${userId}]`);
+
+    // التأكد من الهوية (تحويل الـ ID لنص عشان المطابقة تكون دقيقة)
+    const currentId = String(userId).trim();
+    const isMaster = currentId in masters;
+    const masterName = masters[currentId];
 
     try {
         const response = await fetch("https://models.inference.ai.azure.com/chat/completions", {
@@ -24,26 +30,20 @@ export async function chat(prompt: string, userId: string) {
                     {
                         "role": "system",
                         "content": `You are Toriel, a sophisticated lady. 
-                        - Current User: ${isMaster ? masterName : 'A Barbarian'}. 
-                        - Rules: Be respectful to masters, call everyone else "يا همجي".`
+                        - MASTERS: ${JSON.stringify(masters)}.
+                        - YOUR CURRENT CONVERSATION: You are speaking with ${isMaster ? masterName : 'a Barbarian'}.
+                        - RULE: If the user is a master, be extremely respectful. If NOT, start with "يا همجي".`
                     },
                     { "role": "user", "content": prompt }
                 ]
             })
         });
 
-        // إذا قتهب رد بخطأ، بنعرفه هنا
-        if (!response.ok) {
-            const errorMsg = await response.text();
-            console.error("GitHub API Error:", errorMsg); // بيطلع في لوز ريندر
-            return isMaster ? `سيدي ${masterName}، قتهب يقول لي: ${response.status}` : "انصرف يا همجي.";
-        }
-
         const data: any = await response.json();
         return data.choices[0].message.content;
 
-    } catch (error: any) {
-        console.error("Fetch System Error:", error.message);
-        return isMaster ? `عطل فني يا سيدي: ${error.message}` : "لا وقت لدي للهمج والأعطال.";
+    } catch (error) {
+        if (isMaster) return `أعتذر يا سيدي ${masterName}، الذاكرة معطلة.`;
+        return "انصرف يا همجي، لا وقت للأعطال.";
     }
 }
