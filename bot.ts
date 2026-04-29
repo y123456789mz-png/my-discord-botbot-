@@ -1,13 +1,4 @@
-export async function chat(prompt: string, userId: string) {
-    const users: { [key: string]: string } = {
-        "1403809465156898926": "عبدالله",
-        "1252319342058799154": "عمر",
-        "1398227923055415427": "عزوز"
-    };
-    
-    const currentId = String(userId).trim();
-    const userName = users[currentId] || "صديقي";
-
+export async function chat(prompt: string) {
     try {
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
@@ -20,15 +11,17 @@ export async function chat(prompt: string, userId: string) {
                 "messages": [
                     {
                         "role": "system",
-                        "content": `أنت 'الجنرال غاريت' (General Garrett)، قائد حازم من العصر القديم.
-                        - الشخصية: وقور، حازم، ومنضبط.
-                        - المخاطب: أنت تتحدث الآن مع ${userName}.
-                        - الأسلوب: استخدم لغة عربية فصحى قوية ومهذبة، وابتعد عن التكلف الزائد أو الكرنج.`
+                        "content": `You are 'General Garrett'.
+                        - Style: Old Wild West Cowboy.
+                        - Language: Mix of gritty Wild West English (e.g., 'Partner', 'Reckon', 'Listen here') and strong Classical Arabic (Fusha).
+                        - Personality: Brief, tough, and direct. No long philosophies.
+                        - Keywords to use: 'يا شريك', 'يا هذا', 'أصغِ جيداً', 'أظن ذلك'.
+                        - Rules: Keep responses short. No roleplay cringe. Be a man of few words.`
                     },
                     { "role": "user", "content": prompt }
                 ],
-                "temperature": 0.8, // خفضناها شوي للثبات
-                "max_tokens": 4096, // رقم آمن وممتاز للردود الطويلة
+                "temperature": 0.8,
+                "max_tokens": 500,
                 "top_p": 1
             })
         });
@@ -38,11 +31,10 @@ export async function chat(prompt: string, userId: string) {
         if (data.choices && data.choices[0]) {
             return data.choices[0].message.content;
         } else {
-            console.log("Groq Error Data:", data); // عشان تشوف الإيرور في Logs ريندر
-            return "عذراً يا " + userName + "، يبدو أن هناك عطلاً في مخزن الذخيرة.";
+            return "يبدو أن مخزن الذخيرة فارغ يا شريك، عُد لاحقاً.";
         }
 
     } catch (error) {
-        return "سيدي، هناك مشكلة في الاتصال بالسيرفر حالياً.";
+        return "هناك عاصفة رملية تعيق الاتصال حالياً.";
     }
 }
