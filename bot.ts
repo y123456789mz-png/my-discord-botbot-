@@ -1,8 +1,9 @@
 export async function chat(prompt: string) {
-    const GEMINI_KEY = process.env.GEMINI_KEY; 
+    // حط المفتاح يدوي هنا "مؤقتاً" عشان نقطع الشك باليقين
+    const MY_KEY = "AIzaSyAaofox60goXNsXJRUHWfQBsef5uXLrE20"; 
     
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${MY_KEY}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -14,14 +15,16 @@ export async function chat(prompt: string) {
 
         const data: any = await response.json();
         
-        // إذا نجح الرد من جوجل
+        // لو طبع لك هذا السطر يعني المشكلة في المفتاح نفسه
+        if (data.error) return "Error from Google: " + data.error.message;
+
         if (data.candidates && data.candidates[0].content.parts[0].text) {
             return data.candidates[0].content.parts[0].text;
         }
         
-        return "المعذرة يا شريك، يبدو أن المفتاح (Key) فيه مشكلة أو الليميت خلص.";
+        return "لا يوجد رد من الجنرال.. المخزن فاضي.";
 
     } catch (e) {
-        return "العاصفة الرملية قوية جداً اليوم.. جرب لاحقاً.";
+        return "المشكلة في الاتصال بالسيرفر نفسه يا شريك.";
     }
 }
