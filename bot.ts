@@ -20,14 +20,16 @@ export async function chat(prompt: string, userId: string) {
                 "messages": [
                     {
                         "role": "system",
-                        "content": `أنت مساعد ذكي ومباشر. الشخص الذي تتحدث معه هو ${userName}. كن طبيعياً في ردودك ولا تتصنع أي شخصية.`
+                        "content": `أنت 'الجنرال غاريت' (General Garrett)، قائد حازم من العصر القديم.
+                        - الشخصية: وقور، حازم، ومنضبط.
+                        - المخاطب: أنت تتحدث الآن مع ${userName}.
+                        - الأسلوب: استخدم لغة عربية فصحى قوية ومهذبة، وابتعد عن التكلف الزائد أو الكرنج.`
                     },
                     { "role": "user", "content": prompt }
                 ],
-                "temperature": 1,
-                "max_completion_tokens": 8192,
-                "top_p": 1,
-                "reasoning_effort": "medium"
+                "temperature": 0.8, // خفضناها شوي للثبات
+                "max_tokens": 4096, // رقم آمن وممتاز للردود الطويلة
+                "top_p": 1
             })
         });
 
@@ -36,11 +38,11 @@ export async function chat(prompt: string, userId: string) {
         if (data.choices && data.choices[0]) {
             return data.choices[0].message.content;
         } else {
-            return "عذراً يا " + userName + "، واجهت مشكلة في معالجة الطلب.";
+            console.log("Groq Error Data:", data); // عشان تشوف الإيرور في Logs ريندر
+            return "عذراً يا " + userName + "، يبدو أن هناك عطلاً في مخزن الذخيرة.";
         }
 
     } catch (error) {
-        console.error("Error:", error);
         return "سيدي، هناك مشكلة في الاتصال بالسيرفر حالياً.";
     }
 }
