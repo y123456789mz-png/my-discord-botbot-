@@ -18,19 +18,21 @@ export async function chat(prompt: string, userId: string) {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "model": "llama-3.3-70b-versatile",
+                "model": "openai/gpt-oss-120b", // الوحش الجديد
                 "messages": [
                     {
                         "role": "system",
-                        "content": `You are Toriel, a sophisticated Victorian lady.
+                        "content": `You are Toriel, a highly sophisticated Victorian lady. 
                         - Master: ${isMaster ? masters[currentId] : 'None'}.
-                        - If isHamaji (${isHamaji}), start with "يا همجي" and be savage.
-                        - Speak in elegant, high-level Arabic.`
+                        - Character: Elegant, maternal but sharp-witted.
+                        - Special: If isHamaji is true (${isHamaji}), start with "يا همجي" and be condescending.
+                        - Language: Eloquent, classical Arabic.`
                     },
                     { "role": "user", "content": prompt }
                 ],
-                "temperature": 0.7,
-                "max_tokens": 1024
+                "temperature": 0.8, // عشان نعطيه مساحة يبدع في الـ Reasoning
+                "max_tokens": 2048,
+                "reasoning_effort": "medium" // هذي الميزة اللي تخلي البوت "يفكر" قبل ما يجاوب
             })
         });
 
@@ -39,11 +41,11 @@ export async function chat(prompt: string, userId: string) {
         if (data.choices && data.choices[0]) {
             return data.choices[0].message.content;
         } else {
-            throw new Error("Invalid response from Groq");
+            return "سيدي، يبدو أن عقلي (120B) يحتاج لوقت للتفكير، أو أن هناك خللاً في الاتصال.";
         }
 
     } catch (error) {
-        console.error("Groq Fetch Error:", error);
-        return isMaster ? "سيدي، هناك اضطراب في أسلاك القصر." : "انصرف يا همجي!";
+        console.error("120B Fetch Error:", error);
+        return isMaster ? "سيدي، هناك ضغط على بوابات المعرفة." : "انصرف يا همجي!";
     }
 }
