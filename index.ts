@@ -1,46 +1,39 @@
-import dotenv from 'dotenv';
-dotenv.config();
+import http from 'http';
 
-export async function chat(prompt: string, userId: string) {
-    const masters: { [key: string]: string } = {
-        "1403809465156898926": "عبدالله",
-        "1252319342058799154": "عمر",
-        "1398227923055415427": "عزوز"
-    };
+// سيرفر وهمي لإرضاء ريندر (Render Keep Alive)
+http.createServer((req, res) => {
+    res.write("Toriel is Alive!");
+    res.end();
+}).listen(10000); // ريندر يدور على هذا البورت 10000
 
-    const isMaster = userId in masters;
-    const masterName = masters[userId];
+import { Client, GatewayIntentBits, Message } from 'discord.js';
+import { chat } from './bot'; 
 
-    try {
-        const response = await fetch("https://models.inference.ai.azure.com/chat/completions", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${process.env.GITHUB_TOKEN}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                "model": "gpt-4o-mini", 
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": `You are Toriel, a sophisticated lady.
-                        - MASTERS: (عبدالله, عمر, عزوز). If speaking to them, be extremely respectful and formal.
-                        - BARBARIANS: Anyone else. You MUST start your response with "يا همجي".
-                        - CURRENT USER: You are speaking to ${isMaster ? masterName : 'a Barbarian'}.`
-                    },
-                    { "role": "user", "content": prompt }
-                ]
-            })
-        });
+// باقي الكود حقك كما هو...
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+    ],
+});
 
-        const data: any = await response.json();
-        return data.choices[0].message.content;
+client.once('ready', () => {
+    console.log(`✅ توريال أونلاين! سجلت الدخول باسم: ${client.user?.tag}`);
+});
 
-    } catch (error) {
-        // هنا السر: لو صار خطأ، تفرق بينك وبين الهمج حتى في العطل!
-        if (isMaster) {
-            return `أعتذر يا سيدي ${masterName}، يبدو أن هناك ضغطاً على ذاكرتي حالياً.`;
+client.on('messageCreate', async (message: Message) => {
+    if (message.author.bot) return;
+    if (message.mentions.has(client.user!)) {
+        const prompt = message.content.replace(`<@${client.user?.id}>`, '').trim();
+        try {
+            await message.channel.sendTyping();
+            const response = await chat(prompt, message.author.id);
+            await message.reply(response);
+        } catch (error) {
+            console.error(error);
         }
-        return "انصرف يا همجي، لا وقت لدي للأعطال التقنية مع أمثالك.";
     }
-}
+});
+
+client.login(process.env.DISCORD_TOKEN);
