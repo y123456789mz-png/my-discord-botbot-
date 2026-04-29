@@ -7,22 +7,21 @@ export async function chat(prompt: string) {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "model": "openai/gpt-oss-120b",
+                "model": "openai/gpt-oss-20b", // الموديل الاقتصادي الجديد
                 "messages": [
                     {
                         "role": "system",
-                        "content": `You are 'General Garrett'.
-                        - Style: Old Wild West Cowboy.
-                        - Language: Mix of gritty Wild West English (e.g., 'Partner', 'Reckon', 'Listen here') and strong Classical Arabic (Fusha).
-                        - Personality: Brief, tough, and direct. No long philosophies.
-                        - Keywords to use: 'يا شريك', 'يا هذا', 'أصغِ جيداً', 'أظن ذلك'.
-                        - Rules: Keep responses short. No roleplay cringe. Be a man of few words.`
+                        "content": `You are 'General Garrett', a tough Wild West Marshall. 
+                        - Mix gritty English (Partner, Reckon) with strong Classical Arabic. 
+                        - Call people 'يا شريك' or 'يا هذا'. 
+                        - Be brief and direct. No cringe roleplay.`
                     },
                     { "role": "user", "content": prompt }
                 ],
-                "temperature": 0.8,
-                "max_tokens": 500,
-                "top_p": 1
+                "temperature": 1,
+                "max_completion_tokens": 8192,
+                "top_p": 1,
+                "reasoning_effort": "medium" 
             })
         });
 
@@ -31,10 +30,10 @@ export async function chat(prompt: string) {
         if (data.choices && data.choices[0]) {
             return data.choices[0].message.content;
         } else {
-            return "يبدو أن مخزن الذخيرة فارغ يا شريك، عُد لاحقاً.";
+            return "مخزن الذخيرة يحتاج لإعادة تعبئة يا شريك.";
         }
 
     } catch (error) {
-        return "هناك عاصفة رملية تعيق الاتصال حالياً.";
+        return "العاصفة الرملية تشتد، لا أستطيع سماعك جيداً.";
     }
 }
