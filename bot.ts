@@ -1,57 +1,48 @@
 export async function chat(prompt: string) {
-    const groqKeys = process.env.GROQ_KEYS ? process.env.GROQ_KEYS.split(',') : [];
-    const hfKey = "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"; // مفتاحك الجديد
-    
-    const randomGroqKey = groqKeys[Math.floor(Math.random() * groqKeys.length)];
-
-    // نظام الـ System Prompt الموحد للهيبة
+    const GEMINI_KEY = "AIzaSyAaofox60goXNsXJRUHWfQBsef5uXLrE20";
     const systemContent = `You are 'General Garrett', a tough Wild West Marshall. 
-    - Mix gritty English (Partner, Reckon) with strong Classical Arabic. 
-    - Call everyone 'يا شريك' or 'يا هذا'. 
-    - Be brief and direct. No cringe.`;
+    - Style: Gritty Cowboy. 
+    - Language: Mix of English (Partner, Reckon, Listen here) and strong Classical Arabic (Fusha). 
+    - Tone: Brief, direct, and authoritative. 
+    - Keywords: يا شريك، يا هذا، أصغِ جيداً.`;
 
     try {
-        // المحاولة الأولى: باستخدام Groq
-        const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        // المحاولة الأولى: Gemini (الخيار الأضمن والأساسي الآن)
+        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
             method: "POST",
-            headers: {
-                "Authorization": `Bearer ${randomGroqKey}`,
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                "model": "openai/gpt-oss-20b",
-                "messages": [{ "role": "system", "content": systemContent }, { "role": "user", "content": prompt }],
-                "temperature": 1,
-                "max_tokens": 500
+                "contents": [{ "parts": [{ "text": `${systemContent}\n\nUser: ${prompt}` }] }],
+                "generationConfig": { "maxOutputTokens": 1000, "temperature": 0.9 }
             })
         });
 
-        const data: any = await groqResponse.json();
-        if (data.choices) return data.choices[0].message.content;
+        const gData = await geminiRes.json();
+        if (gData.candidates && gData.candidates[0].content.parts[0].text) {
+            return gData.candidates[0].content.parts[0].text;
+        }
 
-        throw new Error("Groq Limit Reached"); // لو ما رجع بيانات، ننتقل للخطة ب
+        throw new Error("Gemini Failed");
 
-    } catch (error) {
-        // الخطة ب: استخدام Hugging Face (مخزن الطوارئ)
+    } catch (e) {
+        // الخطة ب: العودة لـ Groq لو تعطلت جوجل (نادر الحدوث)
         try {
-            const hfResponse = await fetch("https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct", {
+            const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${hfKey}`,
-                    "Content-Type": "application/json"
+                headers: { 
+                    "Authorization": `Bearer ${process.env.GROQ_KEYS?.split(',')[0]}`, 
+                    "Content-Type": "application/json" 
                 },
-                body: JSON.stringify({
-                    "inputs": `<|system|>\n${systemContent}\n<|user|>\n${prompt}\n<|assistant|>`,
-                    "parameters": { "max_new_tokens": 500, "temperature": 0.7 }
+                body: JSON.stringify({ 
+                    "model": "llama-3.3-70b-versatile", 
+                    "messages": [{ "role": "system", "content": systemContent }, { "role": "user", "content": prompt }],
+                    "max_tokens": 500 
                 })
             });
-
-            const hfData: any = await hfResponse.json();
-            // هق فيس أحياناً يرجع نص مباشر أو مصفوفة
-            return hfData[0]?.generated_text?.split("<|assistant|>")[1] || hfData.generated_text || "العاصفة شديدة يا شريك، حتى هق فيس لا يستجيب.";
-            
-        } catch (hfError) {
-            return "تعطلت كل الأسلحة يا شريك، نحتاج لهدنة قصيرة.";
+            const data = await groqRes.json();
+            return data.choices[0].message.content;
+        } catch (groqErr) {
+            return "يبدو أن العاصفة الرملية قطعت كل السبل يا شريك، انتظر قليلاً.";
         }
     }
 }
