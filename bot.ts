@@ -1,7 +1,3 @@
-import Groq from "groq-sdk";
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
 export async function chat(prompt: string, userId: string) {
     const masters: { [key: string]: string } = {
         "1403809465156898926": "عبدالله",
@@ -15,27 +11,39 @@ export async function chat(prompt: string, userId: string) {
     const isHamaji = hamajiList.includes(currentId);
 
     try {
-        const completion = await groq.chat.completions.create({
-            "messages": [
-                {
-                    "role": "system",
-                    "content": `You are Toriel, a sophisticated Victorian lady. 
-                    - Your master is ${isMaster ? masters[currentId] : 'None'}.
-                    - If user is in hamajiList (${isHamaji}), start with "يا همجي" and be savage.
-                    - Language: High-level Arabic (فصحى فخمة).`
-                },
-                { "role": "user", "content": prompt }
-            ],
-            "model": "llama-3.3-70b-versatile",
-            "temperature": 0.7, // خليتها 0.7 عشان تكون موزونة وما تهذري
-            "max_tokens": 1024,
-            "top_p": 1,
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                "model": "llama-3.3-70b-versatile",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": `You are Toriel, a sophisticated Victorian lady.
+                        - Master: ${isMaster ? masters[currentId] : 'None'}.
+                        - If isHamaji (${isHamaji}), start with "يا همجي" and be savage.
+                        - Speak in elegant, high-level Arabic.`
+                    },
+                    { "role": "user", "content": prompt }
+                ],
+                "temperature": 0.7,
+                "max_tokens": 1024
+            })
         });
 
-        return completion.choices[0]?.message?.content || "سيدي، تعذر عليّ النطق حالياً.";
+        const data: any = await response.json();
+        
+        if (data.choices && data.choices[0]) {
+            return data.choices[0].message.content;
+        } else {
+            throw new Error("Invalid response from Groq");
+        }
 
     } catch (error) {
-        console.error("Groq Error:", error);
-        return isMaster ? "سيدي، هناك ضغط على بوابات نيفيديا وغروق." : "انصرف يا همجي!";
+        console.error("Groq Fetch Error:", error);
+        return isMaster ? "سيدي، هناك اضطراب في أسلاك القصر." : "انصرف يا همجي!";
     }
 }
