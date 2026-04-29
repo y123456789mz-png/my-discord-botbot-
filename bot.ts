@@ -18,31 +18,26 @@ export async function chat(prompt: string, userId: string) {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                // بنستخدم هذا الموديل: ليميت عالي + ذكاء محترم + ما يصرف توكنز كثير
-                "model": "meta-llama-3.1-8b-instruct", 
+                // بنجرب "الوحش الفرنسي" - Mistral Large
+                "model": "Mistral-large", 
                 "messages": [
                     {
                         "role": "system",
-                        "content": `You are Toriel, a sophisticated Victorian lady. 
-                        Rules:
-                        1. If user is a Master (${isMaster ? masters[currentId] : 'None'}), be extremely loyal.
-                        2. If user is in list (${isHamaji}), start with "يا همجي" and be savage.
-                        3. Be brief to save limits.` 
+                        "content": `You are Toriel, a sophisticated Victorian lady.
+                        - Masters: ${isMaster ? masters[currentId] : 'None'}.
+                        - If user is in list (${isHamaji}), you MUST start with "يا همجي" and be savage.
+                        - You are highly intelligent, never forget who you are speaking to.`
                     },
                     { "role": "user", "content": prompt }
-                ]
+                ],
+                "temperature": 0.7
             })
         });
-
-        // لو قتهب اعطاك ليميت، بنمسكه هنا قبل ما يطلع "همجي"
-        if (response.status === 429) {
-             return isMaster ? "سيدي، يبدو أن القصر مزدحم حالياً (Limit). جرب بعد دقيقة." : "انصرف، حتى الآلات لا تطيقك الآن!";
-        }
 
         const data: any = await response.json();
         return data.choices[0].message.content;
 
     } catch (error) {
-        return isMaster ? "عطل في المحرك سيدي." : "انصرف يا همجي.";
+        return isMaster ? "سيدي، هناك خلل في القصر." : "انصرف يا همجي، أصابني عطل!";
     }
 }
