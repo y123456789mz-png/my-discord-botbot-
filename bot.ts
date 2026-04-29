@@ -1,26 +1,14 @@
-import dotenv from 'dotenv';
-dotenv.config();
-
 export async function chat(prompt: string, userId: string) {
-    // قائمة الأسياد (أنت، عمر، عزوز)
     const masters: { [key: string]: string } = {
         "1403809465156898926": "عبدالله",
         "1252319342058799154": "عمر",
         "1398227923055415427": "عزوز"
     };
-
-    // قائمة "الهمج" المستهدفين (سعود، رياد، فيصل، والجديد)
-    const hamajiList = [
-        "1448166189120356487", // سعود
-        "1338869079284645892", // رياد
-        "1323322184843788332", // فيصل
-        "1325008579979247626"  // راعي الطقطقة الجديد
-    ];
-
+    const hamajiList = ["1448166189120356487", "1338869079284645892", "1323322184843788332", "1325008579979247626"];
+    
     const currentId = String(userId).trim();
     const isMaster = currentId in masters;
     const isHamaji = hamajiList.includes(currentId);
-    const masterName = masters[currentId];
 
     try {
         const response = await fetch("https://models.inference.ai.azure.com/chat/completions", {
@@ -30,27 +18,31 @@ export async function chat(prompt: string, userId: string) {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "model": "gpt-4o-mini", // تم التحويل للميني بنجاح! 🚀
+                // بنستخدم هذا الموديل: ليميت عالي + ذكاء محترم + ما يصرف توكنز كثير
+                "model": "meta-llama-3.1-8b-instruct", 
                 "messages": [
                     {
                         "role": "system",
-                        "content": `You are Toriel, an elegant Victorian lady.
-                        - MASTERS: If user is (${isMaster ? masterName : 'NONE'}), be respectful, charming, and formal.
-                        - TARGETS (BARBARIANS): If user is in this list (${isHamaji}), you MUST start your response with "يا همجي" and be extremely condescending, witty, and savage.
-                        - OTHERS: If the user is neither, be polite and Victorian, but NO "Hamaji" (don't bring trouble).`
+                        "content": `You are Toriel, a sophisticated Victorian lady. 
+                        Rules:
+                        1. If user is a Master (${isMaster ? masters[currentId] : 'None'}), be extremely loyal.
+                        2. If user is in list (${isHamaji}), start with "يا همجي" and be savage.
+                        3. Be brief to save limits.` 
                     },
                     { "role": "user", "content": prompt }
-                ],
-                "temperature": 0.8 // زيادة التمب لزيادة "الإبداع" في الجلد
+                ]
             })
         });
+
+        // لو قتهب اعطاك ليميت، بنمسكه هنا قبل ما يطلع "همجي"
+        if (response.status === 429) {
+             return isMaster ? "سيدي، يبدو أن القصر مزدحم حالياً (Limit). جرب بعد دقيقة." : "انصرف، حتى الآلات لا تطيقك الآن!";
+        }
 
         const data: any = await response.json();
         return data.choices[0].message.content;
 
     } catch (error) {
-        if (isMaster) return `سيدي ${masterName}، يبدو أن المحرك الصغير يحتاج لراحة قصيرة.`;
-        if (isHamaji) return "حتى الآلات ترفض النزول لمستواك يا همجي!";
-        return "أعتذر، حدث خطأ فني.";
+        return isMaster ? "عطل في المحرك سيدي." : "انصرف يا همجي.";
     }
 }
