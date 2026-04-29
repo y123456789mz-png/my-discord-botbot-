@@ -2,7 +2,6 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export async function chat(prompt: string, userId: string) {
-    // قائمة الأسياد بالـ IDs الرقمية اللي عطيتني إياها
     const masters: { [key: string]: string } = {
         "1403809465156898926": "عبدالله",
         "1252319342058799154": "عمر",
@@ -10,7 +9,7 @@ export async function chat(prompt: string, userId: string) {
     };
 
     const isMaster = userId in masters;
-    const userName = masters[userId] || "همجي";
+    const masterName = masters[userId];
 
     try {
         const response = await fetch("https://models.inference.ai.azure.com/chat/completions", {
@@ -20,35 +19,31 @@ export async function chat(prompt: string, userId: string) {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "model": "gpt-4o-mini", // استخدمنا ميني عشان الليميت والسرعة
+                "model": "gpt-4o-mini", 
                 "messages": [
                     {
                         "role": "system",
-                        "content": `You are Toriel, a sophisticated and elegant lady. 
-                        - YOUR MASTER: Casper (Abdullah). 
-                        - RECOGNITION:
-                          1. If the user is (${isMaster ? userName : 'NOT A MASTER'}), greet them with respect. (Masters are: عبدالله, عمر, عزوز).
-                          2. If the user is ANYONE ELSE (like سعود, رياد, بندر, or strangers): You MUST start every response with "يا همجي" (You barbarian). Be cold, condescending, and formal.
-                        - LANGUAGE: Respond in the same language as the user (Clear Arabic Fusha or Simple English).
-                        - STYLE: Concise, witty, Victorian, and savage to "Hamaji".`
+                        "content": `You are Toriel, a sophisticated lady. 
+                        - Current User: ${isMaster ? masterName : 'A Barbarian'}. 
+                        - Rules: Be respectful to masters, call everyone else "يا همجي".`
                     },
                     { "role": "user", "content": prompt }
-                ],
-                "temperature": 0.7
+                ]
             })
         });
 
+        // إذا قتهب رد بخطأ، بنعرفه هنا
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error("API Error:", errorText);
-            return isMaster ? `أعتذر يا سيدي ${userName}، الـ API زعلانة حالياً.` : "حتى النظام يرفض محادثتك يا همجي.";
+            const errorMsg = await response.text();
+            console.error("GitHub API Error:", errorMsg); // بيطلع في لوز ريندر
+            return isMaster ? `سيدي ${masterName}، قتهب يقول لي: ${response.status}` : "انصرف يا همجي.";
         }
 
         const data: any = await response.json();
         return data.choices[0].message.content;
 
-    } catch (error) {
-        console.error("Fetch Error:", error);
-        return isMaster ? "سيدي عبدالله، حدث عطل تقني في ذاكرتي." : "انصرف يا همجي، لا وقت لدي للأعطال.";
+    } catch (error: any) {
+        console.error("Fetch System Error:", error.message);
+        return isMaster ? `عطل فني يا سيدي: ${error.message}` : "لا وقت لدي للهمج والأعطال.";
     }
 }
