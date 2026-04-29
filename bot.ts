@@ -1,5 +1,7 @@
 export async function chat(prompt: string) {
-    const GEMINI_KEY = "AIzaSyAaofox60goXNsXJRUHWfQBsef5uXLrE20";
+    // تأكد أنك كتبت GEMINI_KEY في ريندر بنفس الحروف الكبيرة
+    const GEMINI_KEY = process.env.GEMINI_KEY; 
+    
     const systemContent = `You are 'General Garrett', a tough Wild West Marshall. 
     - Style: Gritty Cowboy. 
     - Language: Mix of English (Partner, Reckon, Listen here) and strong Classical Arabic (Fusha). 
@@ -7,30 +9,42 @@ export async function chat(prompt: string) {
     - Keywords: يا شريك، يا هذا، أصغِ جيداً.`;
 
     try {
-        // المحاولة الأولى: Gemini (الخيار الأضمن والأساسي الآن)
+        if (!GEMINI_KEY) throw new Error("Missing Gemini Key");
+
         const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                "contents": [{ "parts": [{ "text": `${systemContent}\n\nUser: ${prompt}` }] }],
-                "generationConfig": { "maxOutputTokens": 1000, "temperature": 0.9 }
+                "contents": [{ 
+                    "role": "user", // جيمناي يتطلب تحديد الـ role أحياناً
+                    "parts": [{ "text": `${systemContent}\n\nUser Question: ${prompt}` }] 
+                }],
+                "generationConfig": { "maxOutputTokens": 800, "temperature": 1.0 }
             })
         });
 
         const gData = await geminiRes.json();
-        if (gData.candidates && gData.candidates[0].content.parts[0].text) {
+
+        // فحص لو فيه رد من جيمناي
+        if (gData.candidates && gData.candidates[0]?.content?.parts[0]?.text) {
             return gData.candidates[0].content.parts[0].text;
+        } else {
+            console.error("Gemini Error Detail:", JSON.stringify(gData)); // بيطلع لك في الـ Logs وش المشكلة بالضبط
+            throw new Error("Empty response from Gemini");
         }
 
-        throw new Error("Gemini Failed");
-
     } catch (e) {
-        // الخطة ب: العودة لـ Groq لو تعطلت جوجل (نادر الحدوث)
+        console.error("Primary Route Failed:", e);
+        
+        // الخطة ب: العودة لـ Groq كحل أخير
         try {
+            const groqKeys = process.env.GROQ_KEYS ? process.env.GROQ_KEYS.split(',') : [];
+            const randomGroqKey = groqKeys[Math.floor(Math.random() * groqKeys.length)];
+
             const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
                 headers: { 
-                    "Authorization": `Bearer ${process.env.GROQ_KEYS?.split(',')[0]}`, 
+                    "Authorization": `Bearer ${randomGroqKey}`, 
                     "Content-Type": "application/json" 
                 },
                 body: JSON.stringify({ 
@@ -42,7 +56,7 @@ export async function chat(prompt: string) {
             const data = await groqRes.json();
             return data.choices[0].message.content;
         } catch (groqErr) {
-            return "يبدو أن العاصفة الرملية قطعت كل السبل يا شريك، انتظر قليلاً.";
+            return "يا شريك، يبدو أن البارود قد تبلل.. حاول مجدداً بعد دقائق.";
         }
     }
 }
