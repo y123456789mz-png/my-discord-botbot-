@@ -1,42 +1,39 @@
-import { Client, GatewayIntentBits } from 'discord.js';
-import { chat } from './chat'; // تأكد أن ملف chat.ts فيه الكود الأخير اللي أعطيتك اياه
+export async function chat(prompt: string) {
+    // تأكد أنك أضفت GROQ_API_KEY في إعدادات Render
+    const GROQ_KEY = process.env.GROQ_API_KEY; 
 
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
-    ]
-});
+    try {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${GROQ_KEY}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                "model": "llama-3.3-70b-versatile",
+                "messages": [
+                    { 
+                        "role": "system", 
+                        "content": "You are a helpful and polite female AI assistant. Always respond in a natural feminine Arabic style (صيغة المؤنث). Be direct, professional, and friendly. Avoid roleplay, just be a useful assistant." 
+                    },
+                    { "role": "user", "content": prompt }
+                ],
+                "temperature": 0.7,
+                "max_tokens": 1000
+            })
+        });
 
-client.on('messageCreate', async (message) => {
-    // يتجاهل الرسائل من البوتات
-    if (message.author.bot) return;
+        const data: any = await response.json();
 
-    // يرد فقط إذا تم منشنة البوت
-    if (message.mentions.has(client.user!)) {
-        try {
-            // تنظيف النص من المنشن
-            const prompt = message.content.replace(`<@!${client.user!.id}>`, '').replace(`<@${client.user!.id}>`, '').trim();
-
-            if (!prompt) {
-                return message.reply("أهلاً بكِ، كيف يمكنني مساعدتكِ اليوم؟");
-            }
-
-            // إظهار أن البوت يكتب حالياً
-            await message.channel.sendTyping();
-
-            // جلب الرد من ملف chat.ts
-            const response = await chat(prompt);
-
-            // إرسال الرد النهائي
-            await message.reply(response);
-
-        } catch (error) {
-            console.error("Error in index.ts:", error);
-            await message.reply("عذراً، حدث خطأ فني بسيط، سأكون بخير قريباً.");
+        if (data.choices && data.choices[0]) {
+            return data.choices[0].message.content;
+        } else {
+            console.error("Groq Error:", data);
+            return "عذراً، واجهت مشكلة في معالجة طلبكِ حالياً.";
         }
-    }
-});
 
-client.login(process.env.DISCORD_TOKEN);
+    } catch (error) {
+        console.error("Fetch Error:", error);
+        return "حدث خطأ في الاتصال بالمخدم، يرجى المحاولة لاحقاً.";
+    }
+}
