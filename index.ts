@@ -1,5 +1,5 @@
 import { Client, GatewayIntentBits } from 'discord.js';
-import { chat } from './chat'; // جرب كذا أولاً، نظام tsx المفروض يلقطها
+import { chat } from './chat.ts'; // لاحظ أضفنا .ts هنا
 
 const client = new Client({
     intents: [
@@ -10,7 +10,7 @@ const client = new Client({
 });
 
 client.once('ready', () => {
-    console.log(`✅ البوت شغال يا أمير! باسم: ${client.user?.tag}`);
+    console.log(`✅ البوت جاهز ومنطلق! سجلت الدخول باسم: ${client.user?.tag}`);
 });
 
 client.on('messageCreate', async (message) => {
@@ -29,19 +29,19 @@ client.on('messageCreate', async (message) => {
             await message.reply(response);
 
         } catch (error) {
-            console.error("Error:", error);
-            await message.reply("عذراً، حدث خطأ فني.");
+            console.error("❌ خطأ في معالجة الرسالة:", error);
+            await message.reply("عذراً، حدث خطأ فني بسيط.");
         }
     }
 });
 
 const token = process.env.DISCORD_TOKEN;
 if (!token) {
-    console.error("❌ TOKEN MISSING!");
+    console.error("❌ التوكن مفقود!");
     process.exit(1);
 }
 
 client.login(token).catch(err => {
-    console.error("❌ LOGIN FAILED:", err);
+    console.error("❌ فشل الدخول:", err);
     process.exit(1);
 });
