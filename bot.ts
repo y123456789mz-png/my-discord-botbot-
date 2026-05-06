@@ -1,29 +1,36 @@
 export async function chat(prompt: string) {
-    const MY_KEY = "AIzaSyAaofox60goXNsXJRUHWfQBsef5uXLrE20"; 
-    
+    const GROQ_KEY = process.env.GROQ_API_KEY; 
+
     try {
-        // عدلنا الرابط والموديل للاسم الصحيح 100%
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${MY_KEY}`, {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Authorization": `Bearer ${GROQ_KEY}`,
+                "Content-Type": "application/json"
+            },
             body: JSON.stringify({
-                "contents": [{
-                    "parts": [{ "text": `You are General Garrett, a tough Wild West Marshall. Mix gritty English with strong Fusha Arabic. Brief and direct. Partner, يا شريك.\n\nUser: ${prompt}` }]
-                }]
+                "model": "llama-3.3-70b-versatile",
+                "messages": [
+                    { 
+                        "role": "system", 
+                        "content": "You are a helpful AI assistant. You must always speak in a feminine Arabic style (صيغة المؤنث). Keep your responses natural, polite, and direct. No roleplay, just a default helpful female assistant." 
+                    },
+                    { "role": "user", "content": prompt }
+                ],
+                "temperature": 0.7,
+                "max_tokens": 1000
             })
         });
 
         const data: any = await response.json();
-        
-        if (data.error) return "Error: " + data.error.message;
 
-        if (data.candidates && data.candidates[0].content.parts[0].text) {
-            return data.candidates[0].content.parts[0].text;
+        if (data.choices && data.choices[0]) {
+            return data.choices[0].message.content;
+        } else {
+            return "عذراً، واجهت مشكلة في الاتصال بالمخدم.";
         }
-        
-        return "المخزن فاضي يا شريك.";
 
-    } catch (e) {
-        return "عاصفة رملية في السيرفر.";
+    } catch (error) {
+        return "حدث خطأ غير متوقع، يرجى المحاولة لاحقاً.";
     }
 }
