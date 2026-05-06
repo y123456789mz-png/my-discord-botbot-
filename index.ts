@@ -1,5 +1,5 @@
 import { Client, GatewayIntentBits } from 'discord.js';
-import { chat } from './chat.js'; 
+import { chat } from './chat'; // جرب كذا أولاً، نظام tsx المفروض يلقطها
 
 const client = new Client({
     intents: [
@@ -9,10 +9,8 @@ const client = new Client({
     ]
 });
 
-// رسالة التأكيد في الـ Logs
 client.once('ready', () => {
-    console.log(`✅ تم تشغيل البوت بنجاح! السيرفرات جاهزة.`);
-    console.log(`Logged in as: ${client.user?.tag}`);
+    console.log(`✅ البوت شغال يا أمير! باسم: ${client.user?.tag}`);
 });
 
 client.on('messageCreate', async (message) => {
@@ -24,29 +22,26 @@ client.on('messageCreate', async (message) => {
                 .replace(new RegExp(`<@!?${client.user.id}>`, 'g'), '')
                 .trim();
 
-            if (!prompt) {
-                return message.reply("أهلاً بكِ، أنا هنا لمساعدتكِ. كيف يمكنني خدمتكِ اليوم؟");
-            }
+            if (!prompt) return message.reply("أهلاً بكِ، كيف يمكنني مساعدتكِ؟");
 
             await message.channel.sendTyping();
             const response = await chat(prompt);
             await message.reply(response);
 
         } catch (error) {
-            console.error("❌ حدث خطأ أثناء معالجة الرسالة:", error);
-            await message.reply("عذراً، واجهت مشكلة فنية بسيطة.");
+            console.error("Error:", error);
+            await message.reply("عذراً، حدث خطأ فني.");
         }
     }
 });
 
-// التعامل مع أخطاء تسجيل الدخول
 const token = process.env.DISCORD_TOKEN;
 if (!token) {
-    console.error("❌ خطأ: لم يتم العثور على DISCORD_TOKEN في متغيرات البيئة!");
-    process.exit(1); // يخلي ريندر يعطيك إيرور واضح بدل ما يقفل بصمت
+    console.error("❌ TOKEN MISSING!");
+    process.exit(1);
 }
 
 client.login(token).catch(err => {
-    console.error("❌ فشل تسجيل الدخول إلى ديسبورد:", err);
+    console.error("❌ LOGIN FAILED:", err);
     process.exit(1);
 });
