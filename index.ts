@@ -1,57 +1,45 @@
-import { Client, GatewayIntentBits } from 'discord.js';
+import { 
+    joinVoiceChannel, 
+    createAudioPlayer, 
+    createAudioResource, 
+    AudioPlayerStatus 
+} from '@discordjs/voice';
+import gTTS from 'gtts';
+import { createWriteStream } from 'fs';
+import { join } from 'path';
 
-// --- دالة الشات ---
-async function chat(prompt: string) {
-    const GROQ_KEY = process.env.GROQ_API_KEY; 
+// دالة لجعل البوت يتحدث في القناة الصوتية
+async function speakInVoice(channel: any, text: string) {
+    const connection = joinVoiceChannel({
+        channelId: channel.id,
+        guildId: channel.guild.id,
+        adapterCreator: channel.guild.voiceAdapterCreator,
+    });
 
-    // فحص إذا المفتاح وصل للكود أصلاً
-    if (!GROQ_KEY) return "❌ خطأ: الكود لم يستطع العثور على GROQ_API_KEY في ريندر.";
+    const gtts = new gTTS(text, 'ar'); // اللغة العربية
+    const filePath = join(process.cwd(), 'response.mp3');
+    
+    // حفظ النص كملف صوتي مؤقت
+    gtts.save(filePath, (err: any) => {
+        if (err) return console.error("Error saving gTTS:", err);
 
-    try {
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${GROQ_KEY.trim()}`, // .trim() للتخلص من أي مسافات
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                "model": "llama3-8b-8192", // غيرت الموديل لنسخة أصغر وأسرع للتجربة
-                "messages": [
-                    { "role": "system", "content": "أنتِ مساعدة ذكية تجيبين بصيغة المؤنث." },
-                    { "role": "user", "content": prompt }
-                ]
-            })
+        const player = createAudioPlayer();
+        const resource = createAudioResource(filePath);
+
+        player.play(resource);
+        connection.subscribe(player);
+
+        player.on(AudioPlayerStatus.Idle, () => {
+            // اختيارياً: اترك القناة بعد الانتهاء
+            // connection.destroy();
         });
-
-        const data: any = await response.json();
-
-        if (data.error) return `❌ خطأ من Groq: ${data.error.message}`;
-        return data.choices?.[0]?.message?.content || "عذراً، الرد وصل فارغاً من Groq.";
-
-    } catch (e: any) {
-        return `❌ فشل الاتصال: ${e.message}`;
-    }
+    });
 }
 
-const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
-});
-
-client.once('ready', () => console.log(`✅ البوت شغال: ${client.user?.tag}`));
-
-client.on('messageCreate', async (message) => {
-    if (message.author.bot || !client.user || !message.mentions.has(client.user)) return;
-
-    try {
-        const prompt = message.content.replace(new RegExp(`<@!?${client.user.id}>`, 'g'), '').trim();
-        if (!prompt) return message.reply("تفضلي، كيف يمكنني مساعدتكِ؟");
-
-        await message.channel.sendTyping();
-        const response = await chat(prompt);
-        await message.reply(response);
-    } catch (err) {
-        await message.reply("حدث خطأ تقني.");
-    }
-});
-
-client.login(process.env.DISCORD_TOKEN);
+// داخل الـ client.on('messageCreate')
+// أضف شرطاً: إذا كان المستخدم في قناة صوتية، اجعل البوت ينضم ويتحدث
+if (message.member?.voice.channel) {
+    const responseText = await chat(prompt); // رد غروق اللي سويناه قبل
+    await message.reply(responseText); // رد نصي
+    await speakInVoice(message.member.voice.channel, responseText); // رد صوتي
+}
