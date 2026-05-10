@@ -4,76 +4,60 @@ import {
     createAudioPlayer, 
     createAudioResource, 
     AudioPlayerStatus,
-    getVoiceConnection 
+    getVoiceConnection
 } from '@discordjs/voice';
 import gTTS from 'gtts';
-import { createWriteStream, unlinkSync } from 'fs';
+import { unlinkSync } from 'fs';
 import { join } from 'path';
 
-// --- دالة الشات النصي ---
+// --- دالة الشات (تعديل أسلوب الخطاب) ---
 async function chat(prompt: string) {
     const GROQ_KEY = process.env.GROQ_API_KEY; 
-    if (!GROQ_KEY) return "❌ خطأ: لم يتم العثور على GROQ_API_KEY";
-
     try {
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
-            headers: {
-                "Authorization": `Bearer ${GROQ_KEY.trim()}`,
-                "Content-Type": "application/json"
-            },
+            headers: { "Authorization": `Bearer ${GROQ_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify({
                 "model": "llama-3.3-70b-versatile",
                 "messages": [
                     { 
                         "role": "system", 
-                        "content": "أنتِ ليلى، صديقة رهيبة وذكية، تسولفين بلهجة سعودية بيضاء ورايقة. لا تصيرين رسمية، وخليكِ اجتماعية وبسيطة." 
+                        "content": "أنتِ ليلى، فتاة سعودية رهيبة وذكية ورايقة. خاطبي المستخدم دائماً بصيغة المذكر (مثلاً: كيف حالك، أنت، وش سويت) إلا إذا عرفتِ يقيناً أنها بنت. تكلمي عن نفسكِ دائماً بصيغة المؤنث (أنا سويت، أنا فكرت). خليكِ طبيعية وبدون رسميات زايدة." 
                     },
                     { "role": "user", "content": prompt }
                 ]
             })
         });
         const data: any = await response.json();
-        return data.choices?.[0]?.message?.content || "الرد فارغ.";
-    } catch (e: any) {
-        return `❌ فشل الاتصال: ${e.message}`;
-    }
+        return data.choices?.[0]?.message?.content || "معليش، المخ علق ثواني.";
+    } catch (e) { return "فشل الاتصال بالمخ."; }
 }
 
-// --- دالة النطق الصوتي (معدلة لضمان التشغيل) ---
+// --- دالة النطق (إلغاء الدفن) ---
 async function speakInVoice(channel: any, text: string) {
     try {
         const connection = joinVoiceChannel({
             channelId: channel.id,
             guildId: channel.guild.id,
             adapterCreator: channel.guild.voiceAdapterCreator,
+            selfDeaf: false, // شلنا السماعة المشطوبة هنا
+            selfMute: false
         });
 
         const gtts = new gTTS(text, 'ar');
-        const fileName = `res_${Date.now()}.mp3`; // اسم ملف فريد عشان ما يتصادمون
-        const filePath = join(process.cwd(), fileName);
+        const filePath = join(process.cwd(), `voice_${Date.now()}.mp3`);
         
-        // ننتظر حفظ الملف تماماً
         gtts.save(filePath, async (err: any) => {
-            if (err) return console.error("❌ خطأ في gTTS:", err);
-
+            if (err) return;
             const player = createAudioPlayer();
             const resource = createAudioResource(filePath);
-
             connection.subscribe(player);
             player.play(resource);
-
             player.on(AudioPlayerStatus.Idle, () => {
                 try { unlinkSync(filePath); } catch (e) {}
             });
-
-            player.on('error', error => {
-                console.error('❌ خطأ في المشغل:', error.message);
-            });
         });
-    } catch (error) {
-        console.error("❌ فشل في دخول الروم الصوتي:", error);
-    }
+    } catch (error) { console.error(error); }
 }
 
 const client = new Client({
@@ -85,30 +69,23 @@ const client = new Client({
     ]
 });
 
-client.once('ready', () => console.log(`✅ ليلى جاهزة يا كاسبر: ${client.user?.tag}`));
+client.once('ready', () => console.log(`✅ ليلى رجعت وبتضبط أسلوبها!`));
 
 client.on('messageCreate', async (message) => {
     if (message.author.bot || !client.user || !message.mentions.has(client.user)) return;
 
-    try {
-        const prompt = message.content.replace(new RegExp(`<@!?${client.user.id}>`, 'g'), '').trim();
-        if (!prompt) return message.reply("سمّي.. وش بغيت؟");
+    const prompt = message.content.replace(new RegExp(`<@!?${client.user.id}>`, 'g'), '').trim();
+    if (!prompt) return message.reply("هلا والله.. سم؟");
 
-        await message.channel.sendTyping();
-        const responseText = await chat(prompt);
-        await message.reply(responseText);
+    const responseText = await chat(prompt);
+    await message.reply(responseText);
 
-        // أهم تعديل: فحص القناة الصوتية
-        if (message.member?.voice.channel) {
-            await speakInVoice(message.member.voice.channel, responseText);
-        }
-
-    } catch (err) {
-        console.error(err);
+    if (message.member?.voice.channel) {
+        await speakInVoice(message.member.voice.channel, responseText);
     }
 });
 
-// الخروج التلقائي إذا فضي الروم
+// خروج تلقائي
 client.on('voiceStateUpdate', (oldState, newState) => {
     const botId = client.user?.id;
     if (oldState.channelId && !newState.channelId) {
