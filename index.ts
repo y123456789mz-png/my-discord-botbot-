@@ -62,9 +62,9 @@ client.on('messageCreate', async (message) => {
                 adapterCreator: message.guild!.voiceAdapterCreator,
                 selfDeaf: false,
             });
-            return message.reply("أنا قادمة فوراً يا عزيزي.. I will be there shortly, my dear.");
+            return message.reply("I will be there shortly, my dear.");
         } else {
-            return message.reply("عذراً يا عزيزي، يجب أن تكون في قناة صوتية أولاً.");
+            return message.reply("i am sorry my dear you have to be in the room");
         }
     }
 
