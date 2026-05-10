@@ -3,7 +3,8 @@ import {
     joinVoiceChannel, 
     createAudioPlayer, 
     createAudioResource, 
-    AudioPlayerStatus 
+    AudioPlayerStatus,
+    getVoiceConnection 
 } from '@discordjs/voice';
 import gTTS from 'gtts';
 import { createWriteStream, unlinkSync } from 'fs';
@@ -24,7 +25,10 @@ async function chat(prompt: string) {
             body: JSON.stringify({
                 "model": "llama-3.3-70b-versatile",
                 "messages": [
-                    { "role": "system", "content": "أنتِ مساعدة ذكية تجيبين بصيغة المؤنث بلهجة سعودية رايقة." },
+                    { 
+                        "role": "system", 
+                        "content": "أنتِ ليلى، صديقة رهيبة وذكية، تسولفين بلهجة سعودية بيضاء ورايقة. لا تصيرين رسمية، وخليكِ اجتماعية وبسيطة." 
+                    },
                     { "role": "user", "content": prompt }
                 ]
             })
@@ -36,8 +40,8 @@ async function chat(prompt: string) {
     }
 }
 
-// --- دالة النطق الصوتي ---
-function speakInVoice(channel: any, text: string) {
+// --- دالة النطق الصوتي (معدلة لضمان التشغيل) ---
+async function speakInVoice(channel: any, text: string) {
     try {
         const connection = joinVoiceChannel({
             channelId: channel.id,
@@ -46,19 +50,25 @@ function speakInVoice(channel: any, text: string) {
         });
 
         const gtts = new gTTS(text, 'ar');
-        const filePath = join(process.cwd(), 'response.mp3');
+        const fileName = `res_${Date.now()}.mp3`; // اسم ملف فريد عشان ما يتصادمون
+        const filePath = join(process.cwd(), fileName);
         
-        gtts.save(filePath, (err: any) => {
-            if (err) return console.error("❌ خطأ في حفظ الملف الصوتي:", err);
+        // ننتظر حفظ الملف تماماً
+        gtts.save(filePath, async (err: any) => {
+            if (err) return console.error("❌ خطأ في gTTS:", err);
 
             const player = createAudioPlayer();
             const resource = createAudioResource(filePath);
 
-            player.play(resource);
             connection.subscribe(player);
+            player.play(resource);
 
             player.on(AudioPlayerStatus.Idle, () => {
-                try { unlinkSync(filePath); } catch (e) {} // حذف الملف بعد الانتهاء
+                try { unlinkSync(filePath); } catch (e) {}
+            });
+
+            player.on('error', error => {
+                console.error('❌ خطأ في المشغل:', error.message);
             });
         });
     } catch (error) {
@@ -66,41 +76,47 @@ function speakInVoice(channel: any, text: string) {
     }
 }
 
-// --- محرك البوت الرئيسي ---
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildVoiceStates // ضروري جداً للصوت
+        GatewayIntentBits.GuildVoiceStates
     ]
 });
 
-client.once('ready', () => console.log(`✅ البوت شغال يا عبدالله: ${client.user?.tag}`));
+client.once('ready', () => console.log(`✅ ليلى جاهزة يا كاسبر: ${client.user?.tag}`));
 
 client.on('messageCreate', async (message) => {
-    // تجاهل البوتات والرسائل اللي ما فيها منشن
     if (message.author.bot || !client.user || !message.mentions.has(client.user)) return;
 
     try {
         const prompt = message.content.replace(new RegExp(`<@!?${client.user.id}>`, 'g'), '').trim();
-        if (!prompt) return message.reply("أهلاً بكِ، سمّي.. وش بغيتي؟");
+        if (!prompt) return message.reply("سمّي.. وش بغيت؟");
 
         await message.channel.sendTyping();
-        
-        // 1. جلب الرد النصي من AI
         const responseText = await chat(prompt);
-        
-        // 2. الرد في الشات
         await message.reply(responseText);
 
-        // 3. إذا كان المستخدم في روم صوتي.. اخليه يتكلم
+        // أهم تعديل: فحص القناة الصوتية
         if (message.member?.voice.channel) {
-            speakInVoice(message.member.voice.channel, responseText);
+            await speakInVoice(message.member.voice.channel, responseText);
         }
 
     } catch (err) {
         console.error(err);
+    }
+});
+
+// الخروج التلقائي إذا فضي الروم
+client.on('voiceStateUpdate', (oldState, newState) => {
+    const botId = client.user?.id;
+    if (oldState.channelId && !newState.channelId) {
+        const channel = oldState.channel;
+        if (channel && channel.members.size === 1 && channel.members.has(botId!)) {
+            const connection = getVoiceConnection(channel.guild.id);
+            if (connection) connection.destroy();
+        }
     }
 });
 
