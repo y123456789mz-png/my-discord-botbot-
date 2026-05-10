@@ -1,13 +1,13 @@
 import { Client, GatewayIntentBits } from 'discord.js';
-import { joinVoiceChannel, getVoiceConnection } from '@discordjs/voice';
+import { joinVoiceChannel } from '@discordjs/voice';
 import http from 'http';
 
-// --- بوابة وهمية لـ Render ---
+// --- بوابة وهمية لـ Render المجاني ---
 http.createServer((req, res) => {
-    res.writeHead(200); res.end("The assistant is ready.");
+    res.writeHead(200); res.end("Your lady assistant is ready.");
 }).listen(process.env.PORT || 3000);
 
-// --- دالة الشات (الشخصية الفخمة) ---
+// --- دالة الشات (الشخصية الأنثوية الفخمة) ---
 async function chat(prompt: string) {
     const GROQ_KEY = process.env.GROQ_API_KEY; 
     try {
@@ -19,12 +19,12 @@ async function chat(prompt: string) {
                 "messages": [
                     { 
                         "role": "system", 
-                        "content": `أنت مساعد ذكي ولبق جداً. 
-                        - تتحدث باللغة العربية الفصحى الراقية وباللغة الإنجليزية البريطانية الكلاسيكية.
-                        - خاطب المستخدم دائماً بصيغة المذكر بعبارات مثل "How can I help you, my dear?" أو "أهلاً بك يا عزيزي".
-                        - استخدم تعبيرات إنجليزية كلاسيكية مثل "Good heavens!" عند التعجب أو الصدمة.
-                        - لا تذكر أبداً أنك فتاة سعودية أو أي تفاصيل شخصية غير مناسبة، أنت مساعد ملكي الطابع.
-                        - إذا طلب منك الانضمام للروم (join)، قل "أنا قادمة" أو "I will be there".`
+                        "content": `أنتِ مساعدة ذكية، لبقة، وأنثوية جداً بطابع ملكي فخم.
+                        - تتحدثين باللغة العربية الفصحى الراقية وباللغة الإنجليزية البريطانية الكلاسيكية.
+                        - خاطبي المستخدم (الرجل) بعبارات مثل "عزيزي"، "My dear"، "How can I help you, my dear?".
+                        - استخدمي تعبيرات مثل "Good heavens!" أو "Oh dear!" عند الصدمة.
+                        - أنتِ لستِ مجرد بوت، أنتِ سيدة راقية تخدم المستخدم بأدب جم.
+                        - إذا قيل لكِ "join" أو "انضمي"، قولي "أنا قادمة يا عزيزي" أو "I will be there, my dear".`
                     },
                     { "role": "user", "content": prompt }
                 ],
@@ -32,8 +32,8 @@ async function chat(prompt: string) {
             })
         });
         const data: any = await response.json();
-        return data.choices?.[0]?.message?.content || "I beg your pardon?";
-    } catch (e) { return "عذراً، حدث خطأ في النظام."; }
+        return data.choices?.[0]?.message?.content || "I beg your pardon, my dear?";
+    } catch (e) { return "عذراً يا عزيزي، يبدو أن هناك عطلاً في النظام."; }
 }
 
 const client = new Client({
@@ -48,8 +48,8 @@ client.on('messageCreate', async (message) => {
 
     const prompt = message.content.replace(new RegExp(`<@!?${client.user.id}>`, 'g'), '').trim();
     
-    // أمر الانضمام
-    if (prompt.toLowerCase() === 'join' || prompt === '/join') {
+    // أمر الانضمام للروم
+    if (prompt.toLowerCase() === 'join' || prompt === '/join' || prompt === 'انضمي') {
         if (message.member?.voice.channel) {
             joinVoiceChannel({
                 channelId: message.member.voice.channel.id,
@@ -57,9 +57,9 @@ client.on('messageCreate', async (message) => {
                 adapterCreator: message.guild!.voiceAdapterCreator,
                 selfDeaf: false,
             });
-            return message.reply("أنا قادمة فوراً.. I will be there shortly, my dear.");
+            return message.reply("أنا قادمة فوراً يا عزيزي.. I will be there shortly, my dear.");
         } else {
-            return message.reply("عذراً، يجب أن تكون في روم صوتي أولاً.");
+            return message.reply("عذراً يا عزيزي، يجب أن تكون في قناة صوتية أولاً.");
         }
     }
 
@@ -69,4 +69,5 @@ client.on('messageCreate', async (message) => {
     await message.reply(responseText);
 });
 
+client.once('ready', () => console.log(`✅ المساعدة الفخمة جاهزة للخدمة!`));
 client.login(process.env.DISCORD_TOKEN);
