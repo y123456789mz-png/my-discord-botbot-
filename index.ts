@@ -9,8 +9,9 @@ import {
 import gTTS from 'gtts';
 import { unlinkSync } from 'fs';
 import { join } from 'path';
+import http from 'http';
 
-// --- دالة الشات الذكية (بدون هبد) ---
+// --- دالة الشات (معدلة لقتل الهبد) ---
 async function chat(prompt: string) {
     const GROQ_KEY = process.env.GROQ_API_KEY; 
     try {
@@ -22,26 +23,27 @@ async function chat(prompt: string) {
                 "messages": [
                     { 
                         "role": "system", 
-                        "content": "أنتِ ليلى، فتاة سعودية رهيبة وذكية. خاطبي المستخدم بصيغة المذكر (أنتَ، كيف حالك) وتكلمي عن نفسك بصيغة المؤنث. لا تألفين قصصاً خيالية، خليكِ حكيمة ورايقة." 
+                        "content": "أنتِ ليلى، مساعدة سعودية ذكية وواقعية جداً. (مهم): إذا سألك المستخدم عن شخصية أو معلومة لا تعرفينها، قولي 'والله ما أعرف' ولا تؤلفين قصصاً خيالية. خاطبي الرجال بصيغة المذكر دائماً. لا تذكري أنك ذكاء اصطناعي، كوني طبيعية." 
                     },
                     { "role": "user", "content": prompt }
                 ],
-                "temperature": 0.6 // تقليل الهبد
+                "temperature": 0.3 // نزلنا الحرارة عشان يركز وما يهبد
             })
         });
         const data: any = await response.json();
-        return data.choices?.[0]?.message?.content || "المخ معلق ثواني..";
+        return data.choices?.[0]?.message?.content || "المخ معلق..";
     } catch (e) { return "فشل الاتصال بالمخ."; }
 }
 
-// --- دالة النطق (المبسطة) ---
+// --- دالة النطق (إصلاح الدفن) ---
 function speakInVoice(channel: any, text: string) {
     try {
         const connection = joinVoiceChannel({
             channelId: channel.id,
             guildId: channel.guild.id,
             adapterCreator: channel.guild.voiceAdapterCreator,
-            selfDeaf: false,
+            selfDeaf: false, // تأكيد فك الدفن
+            selfMute: false
         });
 
         const gtts = new gTTS(text, 'ar');
@@ -62,18 +64,15 @@ function speakInVoice(channel: any, text: string) {
 
 const client = new Client({
     intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildVoiceStates
+        GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates
     ]
 });
 
 client.on('messageCreate', async (message) => {
     if (message.author.bot || !client.user || !message.mentions.has(client.user)) return;
-
     const prompt = message.content.replace(new RegExp(`<@!?${client.user.id}>`, 'g'), '').trim();
-    if (!prompt) return message.reply("هلا والله.. سم؟");
+    if (!prompt) return;
 
     const responseText = await chat(prompt);
     await message.reply(responseText);
@@ -82,5 +81,8 @@ client.on('messageCreate', async (message) => {
         speakInVoice(message.member.voice.channel, responseText);
     }
 });
+
+// بوابة وهمية لـ Render
+http.createServer((req, res) => { res.writeHead(200); res.end("Ready"); }).listen(process.env.PORT || 3000);
 
 client.login(process.env.DISCORD_TOKEN);
