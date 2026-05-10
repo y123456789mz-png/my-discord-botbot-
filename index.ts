@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, Message } from 'discord.js';
+import { Client, GatewayIntentBits } from 'discord.js';
 import { 
     joinVoiceChannel, 
     createAudioPlayer, 
@@ -11,14 +11,15 @@ import gTTS from 'gtts';
 import { unlinkSync } from 'fs';
 import { join } from 'path';
 import http from 'http';
+import ffmpeg from 'ffmpeg-static';
 
-// --- 1. البوابة الوهمية عشان Render المجاني ما يقفل البوت ---
+// --- بوابة وهمية لـ Render (عشان ما يقفل البوت) ---
 http.createServer((req, res) => {
     res.writeHead(200);
-    res.end("ليلى شغالة يا كاسبر.. روقنا!");
+    res.end("ليلى شغالة يا كاسبر!");
 }).listen(process.env.PORT || 3000);
 
-// --- 2. دالة الشات (النسخة الرايقة - ليلى) ---
+// --- دالة الشات (ليلى الرايقة) ---
 async function chat(prompt: string) {
     const GROQ_KEY = process.env.GROQ_API_KEY; 
     try {
@@ -30,7 +31,7 @@ async function chat(prompt: string) {
                 "messages": [
                     { 
                         "role": "system", 
-                        "content": "أنتِ ليلى، فتاة سعودية رهيبة وذكية. خاطبي الرجال بصيغة المذكر (أنتَ، كيف حالك) وتكلمي عن نفسك بصيغة المؤنث. إذا سألك عن شيء لا تعرفينه قولي 'ما أعرف' ولا تألفين." 
+                        "content": "أنتِ ليلى، فتاة سعودية ذكية ورهيبة. خاطبي المستخدم بصيغة المذكر (أنتَ، كيف حالك) وتكلمي عن نفسك بصيغة المؤنث. إذا سألك عن شيء لا تعرفينه قولي 'ما أعرف' ولا تألفين قصصاً خيالية." 
                     },
                     { "role": "user", "content": prompt }
                 ],
@@ -42,7 +43,7 @@ async function chat(prompt: string) {
     } catch (e) { return "فشل الاتصال بالمخ."; }
 }
 
-// --- 3. دالة النطق (حل مشكلة الصمت والدفن) ---
+// --- دالة الصوت (بإصلاح المسار والمحرك) ---
 function speakInVoice(channel: any, text: string) {
     try {
         const connection = joinVoiceChannel({
@@ -54,18 +55,17 @@ function speakInVoice(channel: any, text: string) {
         });
 
         const gtts = new gTTS(text, 'ar');
-        const filePath = join(process.cwd(), `voice_temp.mp3`);
+        const filePath = join(process.cwd(), `voice_${Date.now()}.mp3`);
         
         gtts.save(filePath, (err: any) => {
             if (err) return console.error("Error saving gTTS:", err);
 
-            const player = createAudioPlayer();
-            // استخدام StreamType.Arbitrary لضمان عمل ffmpeg-static
             const resource = createAudioResource(filePath, {
                 inputType: StreamType.Arbitrary,
                 inlineVolume: true
             });
 
+            const player = createAudioPlayer();
             connection.subscribe(player);
             player.play(resource);
 
@@ -78,7 +78,6 @@ function speakInVoice(channel: any, text: string) {
     } catch (error) { console.error("Voice Error:", error); }
 }
 
-// --- 4. إعداد البوت وتشغيله ---
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -88,7 +87,7 @@ const client = new Client({
     ]
 });
 
-client.once('ready', () => console.log(`✅ ليلى انطلقت: ${client.user?.tag}`));
+client.once('ready', () => console.log(`✅ ليلى انطلقت يا بطل!`));
 
 client.on('messageCreate', async (message) => {
     if (message.author.bot || !client.user || !message.mentions.has(client.user)) return;
