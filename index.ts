@@ -5,19 +5,18 @@ import {
     createAudioResource, 
     StreamType,
     AudioPlayerStatus,
-    VoiceConnectionStatus,
-    entersState
+    VoiceConnectionStatus
 } from '@discordjs/voice';
 import http from 'http';
 import { join } from 'path';
 import ffmpeg from 'ffmpeg-static';
 
-// --- بوابة وهمية لـ Render ---
+// --- 1. بوابة وهمية لـ Render (للمحافظة على استمرارية الخدمة المجانية) ---
 http.createServer((req, res) => {
     res.writeHead(200); res.end("Toriel is Elegant & Ready.");
 }).listen(process.env.PORT || 3000);
 
-// --- دالة المخ (الردود الفخمة واللغات) ---
+// --- 2. دالة المخ (الذكاء الفخم، اللغات، والرزانة) ---
 async function chat(prompt: string) {
     const GROQ_KEY = process.env.GROQ_API_KEY; 
     try {
@@ -29,12 +28,12 @@ async function chat(prompt: string) {
                 "messages": [
                     { 
                         "role": "system", 
-                        "content": `أنتِ Toriel، مساعدة ذكية وأنثوية بطابع ملكي راقٍ.
-                        - تفهمين العامية العربية لكن تردين بالفصحى الراقية دائماً.
-                        - إذا تحدث المستخدم بالعربية، ردي بالعربية الفصحى. وإذا تحدث بالإنجليزية، ردي بالإنجليزية البريطانية.
+                        "content": `أنتِ Toriel، مساعدة ذكية وأنثوية بطابع ملكي راقٍ جداً.
+                        - تفهمين العامية العربية بطلاقة لكن تردين بالفصحى الراقية دائماً.
+                        - إذا تحدث المستخدم بالعربية، ردي بالفصحى. وإذا تحدث بالإنجليزية، ردي بالإنجليزية البريطانية الكلاسيكية.
                         - خاطبي المستخدم بـ "عزيزي" أو "My dear".
-                        - لا تستخدمي "Good heavens!" إلا للأخبار الصادمة فعلاً.
-                        - لا تذكري أنك ذكاء اصطناعي، تصرفي كسيدة نبيلة.` 
+                        - لا تستخدمي "Good heavens!" إلا للأخبار الصادمة أو الفاجعة فعلاً، ولا تكرريها كثيراً.
+                        - أنتِ سيدة نبيلة ولبقة، لا تذكري أنكِ ذكاء اصطناعي.` 
                     },
                     { "role": "user", "content": prompt }
                 ],
@@ -46,71 +45,48 @@ async function chat(prompt: string) {
     } catch (e) { return "عذراً يا عزيزي، حدث خطأ في النظام."; }
 }
 
-// --- دالة تشغيل المقطع الصوتي المعدلة لضمان التشغيل ---
+// --- 3. دالة تشغيل الترحيب الصوتي (حل مشكلة عدم التشغيل) ---
 function playGreeting(connection: any) {
-    // ننتظر حتى يصبح اتصال البوت بالروم جاهزاً تماماً
     connection.once(VoiceConnectionStatus.Ready, () => {
-        // تأخير بسيط لمدة 500 ملي ثانية (نصف ثانية) عشان نضمن ثبات الصوت
+        // ننتظر ثانية كاملة لضمان استقرار الاتصال قبل بدء الصوت
         setTimeout(() => {
             try {
+                const player = createAudioPlayer();
+                
+                // استخدام ffmpeg-static لضمان تحويل الملف وصلاحيته للتشغيل في ديسكورد
                 const resource = createAudioResource(join(process.cwd(), 'hey.mp3'), {
                     inputType: StreamType.Arbitrary,
                     inlineVolume: true
                 });
-                
-                const player = createAudioPlayer();
+
                 connection.subscribe(player);
                 player.play(resource);
 
-                player.on('error', error => console.error("Audio Player Error:", error));
+                player.on(AudioPlayerStatus.Playing, () => console.log("✅ Toriel is saying Hey!"));
+                player.on('error', error => console.error("Audio Player Error:", error.message));
+                
             } catch (error) {
-                console.error("Could not play greeting file:", error);
+                console.error("Failed to play greeting file:", error);
             }
-        }, 500);
+        }, 1000); 
     });
 }
 
+// --- 4. إعدادات البوت والمنشن والأوامر ---
 const client = new Client({
     intents: [
-        GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildVoiceStates
     ]
 });
 
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
-    // التحقق من المنشن
+    // فلتر المنشن: تجاهل everyone وتفاعل مع منشن توريل فقط
     const isMentioned = message.mentions.users.has(client.user!.id);
     if (!isMentioned || message.mentions.everyone) return;
 
     const prompt = message.content.replace(new RegExp(`<@!?${client.user!.id}>`, 'g'), '').trim();
-
-    // أمر الانضمام
-    if (prompt.toLowerCase() === 'join' || prompt === '/join' || prompt === 'انضمي') {
-        if (message.member?.voice.channel) {
-            const connection = joinVoiceChannel({
-                channelId: message.member.voice.channel.id,
-                guildId: message.guildId!,
-                adapterCreator: message.guild!.voiceAdapterCreator,
-                selfDeaf: false,
-                selfMute: false
-            });
-            
-            // استدعاء دالة الترحيب الذكية
-            playGreeting(connection);
-            
-            return message.reply("أنا قادمة فوراً يا عزيزي.. I will be there shortly, my dear.");
-        } else {
-            return message.reply("عذراً يا عزيزي، يجب أن تكون في قناة صوتية أولاً.");
-        }
-    }
-
-    if (!prompt) return;
-
-    const responseText = await chat(prompt);
-    await message.reply(responseText);
-});
-
-client.once('ready', () => console.log(`✅ Toriel is online and voice delay is ready!`));
-client.login(process.env.DISCORD_TOKEN);
