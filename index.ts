@@ -1,14 +1,21 @@
 import { Client, GatewayIntentBits } from 'discord.js';
-import { joinVoiceChannel } from '@discordjs/voice';
+import { 
+    joinVoiceChannel, 
+    createAudioPlayer, 
+    createAudioResource, 
+    StreamType 
+} from '@discordjs/voice';
 import http from 'http';
+import { join } from 'path';
+import ffmpeg from 'ffmpeg-static';
 
-// --- بوابة وهمية لـ Render ---
+// --- بوابة وهمية لـ Render (عشان الخدمة المجانية ما تفصل) ---
 http.createServer((req, res) => {
-    res.writeHead(200); res.end("Your lady assistant is ready.");
+    res.writeHead(200); res.end("Toriel is Elegant & Ready.");
 }).listen(process.env.PORT || 3000);
 
-// --- دالة الشات (الذكاء المطور) ---
-async function chat(prompt: string, userLanguage: string) {
+// --- دالة المخ (الردود الفخمة واللغات) ---
+async function chat(prompt: string) {
     const GROQ_KEY = process.env.GROQ_API_KEY; 
     try {
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -19,12 +26,12 @@ async function chat(prompt: string, userLanguage: string) {
                 "messages": [
                     { 
                         "role": "system", 
-                        "content": `أنتِ Toriel، مساعدة ذكية، لبقة، وأنثوية بطابع ملكي فخم.
-                        - تفهمين اللغة العربية العامية بجميع لهجاتها، لكنكِ تردين دائماً باللغة العربية الفصحى الراقية.
-                        - إذا تحدث معكِ المستخدم بالعربية، ردي بالعربية الفصحى. وإذا تحدث بالإنجليزية، ردي بالإنجليزية البريطانية الكلاسيكية.
-                        - خاطبي المستخدم (الرجل) بعبارات مثل "عزيزي" أو "My dear".
-                        - (مهم): لا تستخدمي عبارة "Good heavens!" إلا في حال كان كلام المستخدم يحتوي على خبر صادم، مفاجئ، أو فاجع فعلاً. لا تكرريها بشكل مريب.
-                        - كوني سيدة راقية، متزنة، ومستعدة دائماً للمساعدة.`
+                        "content": `أنتِ Toriel، مساعدة ذكية وأنثوية بطابع ملكي راقٍ.
+                        - تفهمين العامية العربية لكن تردين بالفصحى الراقية دائماً.
+                        - إذا تحدث المستخدم بالعربية، ردي بالعربية الفصحى. وإذا تحدث بالإنجليزية، ردي بالإنجليزية البريطانية.
+                        - خاطبي المستخدم بـ "عزيزي" أو "My dear".
+                        - لا تستخدمي "Good heavens!" إلا للأخبار الصادمة فعلاً.
+                        - لا تذكري أنك ذكاء اصطناعي، تصرفي كسيدة نبيلة.` 
                     },
                     { "role": "user", "content": prompt }
                 ],
@@ -33,7 +40,21 @@ async function chat(prompt: string, userLanguage: string) {
         });
         const data: any = await response.json();
         return data.choices?.[0]?.message?.content || "I beg your pardon, my dear?";
-    } catch (e) { return "عذراً يا عزيزي، يبدو أن هناك عطلاً في النظام."; }
+    } catch (e) { return "عذراً يا عزيزي، حدث خطأ في النظام."; }
+}
+
+// --- دالة تشغيل المقطع الصوتي الخاص بك عند الدخول ---
+function playGreeting(connection: any) {
+    try {
+        // تأكد أن اسم الملف هنا يطابق ملفك المرفوع (مثلاً hey.mp3)
+        const resource = createAudioResource(join(process.cwd(), 'hey.mp3'), {
+            inputType: StreamType.Arbitrary,
+            inlineVolume: true
+        });
+        const player = createAudioPlayer();
+        connection.subscribe(player);
+        player.play(resource);
+    } catch (error) { console.error("Could not play greeting:", error); }
 }
 
 const client = new Client({
@@ -44,34 +65,34 @@ const client = new Client({
 });
 
 client.on('messageCreate', async (message) => {
-    // 1. تجاهل البوتات
     if (message.author.bot) return;
 
-    // 2. فحص المنشن: لا ترد على everyone، فقط منشن توريل الصريح
+    // التحقق من المنشن (تتجاهل everyone وتتفاعل مع منشن توريل فقط)
     const isMentioned = message.mentions.users.has(client.user!.id);
     if (!isMentioned || message.mentions.everyone) return;
 
     const prompt = message.content.replace(new RegExp(`<@!?${client.user!.id}>`, 'g'), '').trim();
 
-    // 3. أمر الانضمام /join
+    // أمر الانضمام وتشغيل الـ Hey
     if (prompt.toLowerCase() === 'join' || prompt === '/join' || prompt === 'انضمي') {
         if (message.member?.voice.channel) {
-            joinVoiceChannel({
+            const connection = joinVoiceChannel({
                 channelId: message.member.voice.channel.id,
                 guildId: message.guildId!,
                 adapterCreator: message.guild!.voiceAdapterCreator,
                 selfDeaf: false,
             });
-            return message.reply("I will be there shortly, my dear.");
+            
+            playGreeting(connection);
+            return message.reply("أنا قادمة فوراً يا عزيزي.. I will be there shortly, my dear.");
         } else {
-            return message.reply("i am sorry my dear you have to be in the room");
+            return message.reply("عذراً يا عزيزي، يجب أن تكون في قناة صوتية أولاً.");
         }
     }
 
     if (!prompt) return;
 
-    // 4. تحديد اللغة وإرسال الرد
-    const responseText = await chat(prompt, "auto");
+    const responseText = await chat(prompt);
     await message.reply(responseText);
 });
 
