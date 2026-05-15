@@ -45,13 +45,18 @@ async function chat(prompt: string) {
     } catch (e) { return "عذراً يا عزيزي، حدث خطأ في النظام."; }
 }
 
-// --- 3. دالة تشغيل الترحيب الصوتي عند الجاهزية ---
+// --- 3. دالة تشغيل الترحيب الصوتي المعدلة بالمسار الصارم ---
 function playGreeting(connection: any) {
     connection.once(VoiceConnectionStatus.Ready, () => {
         setTimeout(() => {
             try {
                 const player = createAudioPlayer();
-                const resource = createAudioResource(join(process.cwd(), 'hey.mp3'), {
+                
+                // تعديل المسار لضمان الوصول للمجلد الرئيسي غصب
+                const audioPath = join(process.cwd(), 'hey.mp3');
+                console.log(`Searching for audio at: ${audioPath}`);
+
+                const resource = createAudioResource(audioPath, {
                     inputType: StreamType.Arbitrary,
                     inlineVolume: true
                 });
@@ -65,7 +70,7 @@ function playGreeting(connection: any) {
             } catch (error) {
                 console.error("Failed to play greeting file:", error);
             }
-        }, 1000); 
+        }, 1200); // زيادة بسيطة للتأكيد
     });
 }
 
@@ -82,13 +87,12 @@ const client = new Client({
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
-    // فلتر المنشن: تجاهل everyone وتفاعل مع منشن توريل فقط
     const isMentioned = message.mentions.users.has(client.user!.id);
     if (!isMentioned || message.mentions.everyone) return;
 
     const prompt = message.content.replace(new RegExp(`<@!?${client.user!.id}>`, 'g'), '').trim();
 
-    // أمر الانضمام /join أو انضمي
+    // أمر الانضمام
     if (prompt.toLowerCase() === 'join' || prompt === '/join' || prompt === 'انضمي') {
         if (message.member?.voice.channel) {
             const connection = joinVoiceChannel({
