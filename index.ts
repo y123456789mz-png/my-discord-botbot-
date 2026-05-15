@@ -11,7 +11,7 @@ import http from 'http';
 import { join } from 'path';
 import ffmpeg from 'ffmpeg-static';
 
-// استدعاء مكتبة التشفير الصحيحة والسحابية لضمان عمل الصوت في ريندر
+// استدعاء مكتبة التشفير لضمان التوافق مع قنوات ديسكورد
 try {
     require('libsodium-wrappers');
 } catch (e) {
@@ -52,11 +52,14 @@ async function chat(prompt: string) {
     } catch (e) { return "عذراً يا عزيزي، حدث خطأ في النظام."; }
 }
 
-// --- 3. دالة تشغيل الترحيب الصوتي العام بـ 100% صوت ---
+// --- 3. دالة تشغيل الترحيب الصوتي العام بـ 100% صوت مع المسار الصارم المطلق ---
 function playGreetingSound(connection: any) {
     try {
         const player = createAudioPlayer();
-        const audioPath = join(process.cwd(), 'hey.mp3');
+        
+        // استخدام السيرفر للمسار المطلق المباشر للملف
+        const audioPath = join(__dirname, 'hey.mp3');
+        console.log(`📡 [Toriel Sound] جاري محاولة تشغيل الملف من المسار: ${audioPath}`);
 
         const resource = createAudioResource(audioPath, {
             inputType: StreamType.Arbitrary,
@@ -64,16 +67,16 @@ function playGreetingSound(connection: any) {
         });
 
         if (resource.volume) {
-            resource.volume.setVolume(1.0); // رفع الصوت لـ 100%
+            resource.volume.setVolume(1.0); // رفع الصوت لأعلى شيء
         }
 
         connection.subscribe(player);
         player.play(resource);
 
-        player.on(AudioPlayerStatus.Playing, () => console.log("✅ Toriel played the greeting sound!"));
-        player.on('error', (error) => console.error("❌ Audio Player Error:", error.message));
+        player.on(AudioPlayerStatus.Playing, () => console.log("✅ [Toriel Sound] توريل بدأت تشغيل الصوت بنجاح!"));
+        player.on('error', (error) => console.error("❌ [Toriel Sound] خطأ مشغل الصوت الإدخالي:", error.message));
     } catch (error) {
-        console.error("Failed to play greeting file:", error);
+        console.error("❌ [Toriel Sound] فشل إنشاء مصدر الصوت بالكامل:", error);
     }
 }
 
@@ -87,7 +90,7 @@ const client = new Client({
     ]
 });
 
-// ميزة مراقبة الروم الذكية: ترحب بالجديد اللي يدخل الروم والبوت جالس فيها
+// ميزة مراقبة الروم الذكية
 client.on('voiceStateUpdate', (oldState, newState) => {
     if (newState.member?.user.bot) return;
 
@@ -106,7 +109,6 @@ client.on('voiceStateUpdate', (oldState, newState) => {
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
-    // فلتر المنشن
     const isMentioned = message.mentions.users.has(client.user!.id);
     if (!isMentioned || message.mentions.everyone) return;
 
