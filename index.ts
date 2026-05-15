@@ -57,7 +57,7 @@ function playGreetingSound(connection: any) {
     try {
         const player = createAudioPlayer();
         
-        // تعديل المسار ليرجع خطوة للخلف '..' ليلقى الملف الموجود برا مجلد src
+        // المسار الحالي اللي ضبط ولقط الملف بنجاح في الـ Root
         const audioPath = join(__dirname, '..', 'hey.mp3');
         console.log(`📡 [Toriel Sound] جاري محاولة تشغيل الملف من المسار: ${audioPath}`);
 
@@ -72,7 +72,7 @@ function playGreetingSound(connection: any) {
 
         connection.subscribe(player);
         
-        // إجبار المايك يفتح غصب عشان المقطع قصير وما يكتمه ديسكورد
+        // إجبار ديسكورد على فتح خط المايك للبوت غصب لمنع الكتم التلقائي للمقاطع القصيرة
         connection.setSpeaking(true);
         player.play(resource);
 
@@ -109,12 +109,12 @@ client.on('voiceStateUpdate', (oldState, newState) => {
         const connection = getVoiceConnection(newState.guild.id);
         
         if (connection && connection.joinConfig.channelId === newState.channelId) {
-            console.log(`👤 ${newState.member?.user.tag} دخل الروم، جاري تشغيل الترحيب بعد 3 ثوانٍ...`);
+            console.log(`👤 ${newState.member?.user.tag} دخل الروم، جاري تشغيل الترحيب بعد 3.5 ثوانٍ آمنة...`);
             
-            // التوقيت الموزون 3 ثوانٍ بناءً على طلبك
+            // رفع التوقيت لـ 3500 ملي ثانية لمنع الـ Timeout السالب وضمان شبك الصوت في ديسكورد قبل البث
             setTimeout(() => {
                 playGreetingSound(connection);
-            }, 3000);
+            }, 3500);
         }
     }
 });
@@ -140,7 +140,7 @@ client.on('messageCreate', async (message) => {
             
             setTimeout(() => {
                 playGreetingSound(connection);
-            }, 2000);
+            }, 3000);
 
             return message.reply("أنا قادمة فوراً يا عزيزي.. I will be there shortly, my dear.");
         } else {
@@ -154,7 +154,7 @@ client.on('messageCreate', async (message) => {
     await message.reply(responseText);
 });
 
-// الحدث المتوافق مع الإصدارات الجديدة لمنع التحذيرات
+// الحدث المحدث لمنع تحذيرات ديسكورد القديمة
 client.once('clientReady', () => {
     console.log(`✅ Toriel is online and ready!`);
 });
