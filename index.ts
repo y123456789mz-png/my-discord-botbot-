@@ -49,7 +49,7 @@ async function chat(prompt: string) {
         });
         const data: any = await response.json();
         return data.choices?.[0]?.message?.content || "I beg your pardon, my dear?";
-    } catch (e) { return "عذراً يا عزيزي, حدث خطأ في النظام."; }
+    } catch (e) { return "عذراً يا عزيزي، حدث خطأ في النظام."; }
 }
 
 // --- 3. دالة تشغيل الترحيب الصوتي العام بـ 100% صوت مع المسار الصارم المطلق ---
