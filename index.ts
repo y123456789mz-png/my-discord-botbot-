@@ -11,7 +11,14 @@ import http from 'http';
 import { join } from 'path';
 import ffmpeg from 'ffmpeg-static';
 
-// --- 1. بوابة وهمية لـ Render ---
+// استدعاء مكتبة التشفير بشكل صريح لضمان عمل الصوت على سيرفرات ريندر
+try {
+    require('libsodium-native');
+} catch (e) {
+    console.log("libsodium-native load fallback.");
+}
+
+// --- 1. بوابة وهمية لـ Render (للمحافظة على استمرارية الخدمة) ---
 http.createServer((req, res) => {
     res.writeHead(200); res.end("Toriel is Elegant & Ready.");
 }).listen(process.env.PORT || 3000);
@@ -30,7 +37,7 @@ async function chat(prompt: string) {
                         "role": "system", 
                         "content": `أنتِ Toriel، مساعدة ذكية وأنثوية بطابع ملكي راقٍ جداً.
                         - تفهمين العامية العربية بطلاقة لكن تردين بالفصحى الراقية دائماً.
-                        - إذا تحدث المستخدم بالعربية, ردي بالفصحى. وإذا تحدث بالإنجليزية، ردي بالإنجليزية البريطانية الكلاسيكية.
+                        - إذا تحدث المستخدم بالعربية، ردي بالفصحى. وإذا تحدث بالإنجليزية، ردي بالإنجليزية البريطانية الكلاسيكية.
                         - خاطبي المستخدم بـ "عزيزي" أو "My dear".
                         - لا تستخدمي "Good heavens!" إلا للأخبار الصادمة أو الفاجعة فعلاً، ولا تكرريها كثيراً.
                         - أنتِ سيدة نبيلة ولبقة، لا تذكري أنكِ ذكاء اصطناعي.` 
@@ -57,14 +64,14 @@ function playGreetingSound(connection: any) {
         });
 
         if (resource.volume) {
-            resource.volume.setVolume(1.0); // أعلى قوة صوت
+            resource.volume.setVolume(1.0); // رفع الصوت لأعلى شيء 100%
         }
 
         connection.subscribe(player);
         player.play(resource);
 
         player.on(AudioPlayerStatus.Playing, () => console.log("✅ Toriel played the greeting sound!"));
-        player.on('error', (error) => console.error("Audio Player Error:", error.message));
+        player.on('error', (error) => console.error("❌ Audio Player Error:", error.message));
     } catch (error) {
         console.error("Failed to play greeting file:", error);
     }
@@ -76,24 +83,21 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildVoiceStates // مهم جداً لمراقبة الدخول والخروج من الروم
+        GatewayIntentBits.GuildVoiceStates 
     ]
 });
 
-// ميزة مراقبة الروم: ترحب بأي أحد يدخل الروم والبوت موجود فيها
+// ميزة مراقبة الروم الذكية: ترحب بالجديد اللي يدخل الروم والبوت جالس فيها
 client.on('voiceStateUpdate', (oldState, newState) => {
-    // إذا كان العضو اللي تحرك هو البوت نفسه، نتجاهل الإجراء هنا لأننا بنشغل الصوت في أمر join المباشر
     if (newState.member?.user.bot) return;
 
-    // نتحقق إن العضو دخل رُوم جديدة (وليس مجرد كتم مايك أو فتح كاميرا)
+    // نتحقق إن العضو نقل أو دخل رُوم جديدة فعلياً
     if (oldState.channelId !== newState.channelId && newState.channelId !== null) {
-        // نلقى اتصال البوت الحالي في هذا السيرفر
         const connection = getVoiceConnection(newState.guild.id);
         
         // إذا البوت متصل وموجود في نفس الروم الصوتية اللي دخلها العضو الجديد
         if (connection && connection.joinConfig.channelId === newState.channelId) {
             console.log(`👤 ${newState.member?.user.tag} دخل الروم، جاري تشغيل الترحيب...`);
-            // تأخير بسيط نصف ثانية عشان نضمن إن الشخص شبك وبدأ يسمع
             setTimeout(() => {
                 playGreetingSound(connection);
             }, 600);
@@ -104,6 +108,7 @@ client.on('voiceStateUpdate', (oldState, newState) => {
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
+    // فلتر المنشن
     const isMentioned = message.mentions.users.has(client.user!.id);
     if (!isMentioned || message.mentions.everyone) return;
 
@@ -120,12 +125,12 @@ client.on('messageCreate', async (message) => {
                 selfMute: false
             });
             
-            // ترحب فيك فوراً أول ما تسوي لها join وأنت لوحدك أو مع الشباب
+            // ترحب فيك فوراً أول ما تسوي لها join وهي تدخل عندك لأول مرة
             setTimeout(() => {
                 playGreetingSound(connection);
             }, 1000);
 
-            return message.reply(" I will be there shortly, my dear.");
+            return message.reply("أنا قادمة فوراً يا عزيزي.. I will be there shortly, my dear.");
         } else {
             return message.reply("عذراً يا عزيزي، يجب أن تكون في قناة صوتية أولاً.");
         }
@@ -137,5 +142,5 @@ client.on('messageCreate', async (message) => {
     await message.reply(responseText);
 });
 
-client.once('ready', () => console.log(`✅ Toriel is online and smart voice tracking is ready!`));
+client.once('ready', () => console.log(`✅ Toriel is online and ready!`));
 client.login(process.env.DISCORD_TOKEN);
