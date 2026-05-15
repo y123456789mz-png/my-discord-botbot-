@@ -11,7 +11,7 @@ import http from 'http';
 import { join } from 'path';
 import ffmpeg from 'ffmpeg-static';
 
-// --- 1. بوابة وهمية لـ Render (للمحافظة على استمرارية الخدمة المجانية) ---
+// --- 1. بوابة وهمية لـ Render ---
 http.createServer((req, res) => {
     res.writeHead(200); res.end("Toriel is Elegant & Ready.");
 }).listen(process.env.PORT || 3000);
@@ -45,15 +45,12 @@ async function chat(prompt: string) {
     } catch (e) { return "عذراً يا عزيزي، حدث خطأ في النظام."; }
 }
 
-// --- 3. دالة تشغيل الترحيب الصوتي (حل مشكلة عدم التشغيل) ---
+// --- 3. دالة تشغيل الترحيب الصوتي عند الجاهزية ---
 function playGreeting(connection: any) {
     connection.once(VoiceConnectionStatus.Ready, () => {
-        // ننتظر ثانية كاملة لضمان استقرار الاتصال قبل بدء الصوت
         setTimeout(() => {
             try {
                 const player = createAudioPlayer();
-                
-                // استخدام ffmpeg-static لضمان تحويل الملف وصلاحيته للتشغيل في ديسكورد
                 const resource = createAudioResource(join(process.cwd(), 'hey.mp3'), {
                     inputType: StreamType.Arbitrary,
                     inlineVolume: true
@@ -63,7 +60,7 @@ function playGreeting(connection: any) {
                 player.play(resource);
 
                 player.on(AudioPlayerStatus.Playing, () => console.log("✅ Toriel is saying Hey!"));
-                player.on('error', error => console.error("Audio Player Error:", error.message));
+                player.on('error', (error) => console.error("Audio Player Error:", error.message));
                 
             } catch (error) {
                 console.error("Failed to play greeting file:", error);
@@ -90,3 +87,30 @@ client.on('messageCreate', async (message) => {
     if (!isMentioned || message.mentions.everyone) return;
 
     const prompt = message.content.replace(new RegExp(`<@!?${client.user!.id}>`, 'g'), '').trim();
+
+    // أمر الانضمام /join أو انضمي
+    if (prompt.toLowerCase() === 'join' || prompt === '/join' || prompt === 'انضمي') {
+        if (message.member?.voice.channel) {
+            const connection = joinVoiceChannel({
+                channelId: message.member.voice.channel.id,
+                guildId: message.guildId!,
+                adapterCreator: message.guild!.voiceAdapterCreator,
+                selfDeaf: false,
+                selfMute: false
+            });
+            
+            playGreeting(connection);
+            return message.reply("أنا قادمة فوراً يا عزيزي.. I will be there shortly, my dear.");
+        } else {
+            return message.reply("عذراً يا عزيزي، يجب أن تكون في قناة صوتية أولاً.");
+        }
+    }
+
+    if (!prompt) return;
+
+    const responseText = await chat(prompt);
+    await message.reply(responseText);
+});
+
+client.once('ready', () => console.log(`✅ Toriel is online and ready!`));
+client.login(process.env.DISCORD_TOKEN);
