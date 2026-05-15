@@ -11,14 +11,14 @@ import http from 'http';
 import { join } from 'path';
 import ffmpeg from 'ffmpeg-static';
 
-// استدعاء مكتبة التشفير بشكل صريح لضمان عمل الصوت على سيرفرات ريندر
+// استدعاء مكتبة التشفير الصحيحة والسحابية لضمان عمل الصوت في ريندر
 try {
-    require('libsodium-native');
+    require('libsodium-wrappers');
 } catch (e) {
-    console.log("libsodium-native load fallback.");
+    console.log("libsodium fallback loading.");
 }
 
-// --- 1. بوابة وهمية لـ Render (للمحافظة على استمرارية الخدمة) ---
+// --- 1. بوابة وهمية لـ Render ---
 http.createServer((req, res) => {
     res.writeHead(200); res.end("Toriel is Elegant & Ready.");
 }).listen(process.env.PORT || 3000);
@@ -64,7 +64,7 @@ function playGreetingSound(connection: any) {
         });
 
         if (resource.volume) {
-            resource.volume.setVolume(1.0); // رفع الصوت لأعلى شيء 100%
+            resource.volume.setVolume(1.0); // رفع الصوت لـ 100%
         }
 
         connection.subscribe(player);
@@ -91,11 +91,9 @@ const client = new Client({
 client.on('voiceStateUpdate', (oldState, newState) => {
     if (newState.member?.user.bot) return;
 
-    // نتحقق إن العضو نقل أو دخل رُوم جديدة فعلياً
     if (oldState.channelId !== newState.channelId && newState.channelId !== null) {
         const connection = getVoiceConnection(newState.guild.id);
         
-        // إذا البوت متصل وموجود في نفس الروم الصوتية اللي دخلها العضو الجديد
         if (connection && connection.joinConfig.channelId === newState.channelId) {
             console.log(`👤 ${newState.member?.user.tag} دخل الروم، جاري تشغيل الترحيب...`);
             setTimeout(() => {
@@ -125,7 +123,6 @@ client.on('messageCreate', async (message) => {
                 selfMute: false
             });
             
-            // ترحب فيك فوراً أول ما تسوي لها join وهي تدخل عندك لأول مرة
             setTimeout(() => {
                 playGreetingSound(connection);
             }, 1000);
