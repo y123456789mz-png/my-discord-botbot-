@@ -67,7 +67,7 @@ function playGreetingSound(connection: any) {
         });
 
         if (resource.volume) {
-            resource.volume.setVolume(1.0); // رفع الصوت لأعلى شيء
+            resource.volume.setVolume(1.0); // رفع الصوت لأعلى شيء (100%)
         }
 
         connection.subscribe(player);
@@ -94,52 +94,4 @@ const client = new Client({
 client.on('voiceStateUpdate', (oldState, newState) => {
     if (newState.member?.user.bot) return;
 
-    if (oldState.channelId !== newState.channelId && newState.channelId !== null) {
-        const connection = getVoiceConnection(newState.guild.id);
-        
-        if (connection && connection.joinConfig.channelId === newState.channelId) {
-            console.log(`👤 ${newState.member?.user.tag} دخل الروم، جاري تشغيل الترحيب...`);
-            setTimeout(() => {
-                playGreetingSound(connection);
-            }, 600);
-        }
-    }
-});
-
-client.on('messageCreate', async (message) => {
-    if (message.author.bot) return;
-
-    const isMentioned = message.mentions.users.has(client.user!.id);
-    if (!isMentioned || message.mentions.everyone) return;
-
-    const prompt = message.content.replace(new RegExp(`<@!?${client.user!.id}>`, 'g'), '').trim();
-
-    // أمر الانضمام
-    if (prompt.toLowerCase() === 'join' || prompt === '/join' || prompt === 'انضمي') {
-        if (message.member?.voice.channel) {
-            const connection = joinVoiceChannel({
-                channelId: message.member.voice.channel.id,
-                guildId: message.guildId!,
-                adapterCreator: message.guild!.voiceAdapterCreator,
-                selfDeaf: false,
-                selfMute: false
-            });
-            
-            setTimeout(() => {
-                playGreetingSound(connection);
-            }, 1000);
-
-            return message.reply("أنا قادمة فوراً يا عزيزي.. I will be there shortly, my dear.");
-        } else {
-            return message.reply("عذراً يا عزيزي، يجب أن تكون في قناة صوتية أولاً.");
-        }
-    }
-
-    if (!prompt) return;
-
-    const responseText = await chat(prompt);
-    await message.reply(responseText);
-});
-
-client.once('ready', () => console.log(`✅ Toriel is online and ready!`));
-client.login(process.env.DISCORD_TOKEN);
+    if (oldState.channelId !== newState
