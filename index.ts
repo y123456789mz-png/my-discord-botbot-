@@ -57,8 +57,8 @@ function playGreetingSound(connection: any) {
     try {
         const player = createAudioPlayer();
         
-        // استخدام السيرفر للمسار المطلق المباشر للملف
-        const audioPath = join(__dirname, 'hey.mp3');
+        // تعديل المسار ليرجع خطوة للخلف '..' ليلقى الملف الموجود برا مجلد src
+        const audioPath = join(__dirname, '..', 'hey.mp3');
         console.log(`📡 [Toriel Sound] جاري محاولة تشغيل الملف من المسار: ${audioPath}`);
 
         const resource = createAudioResource(audioPath, {
@@ -71,10 +71,21 @@ function playGreetingSound(connection: any) {
         }
 
         connection.subscribe(player);
+        
+        // إجبار المايك يفتح غصب عشان المقطع قصير وما يكتمه ديسكورد
+        connection.setSpeaking(true);
         player.play(resource);
 
         player.on(AudioPlayerStatus.Playing, () => console.log("✅ [Toriel Sound] توريل بدأت تشغيل الصوت بنجاح!"));
-        player.on('error', (error) => console.error("❌ [Toriel Sound] خطأ مشغل الصوت الإدخالي:", error.message));
+        
+        player.on(AudioPlayerStatus.Idle, () => {
+            connection.setSpeaking(false);
+        });
+
+        player.on('error', (error) => {
+            connection.setSpeaking(false);
+            console.error("❌ [Toriel Sound] خطأ مشغل الصوت الإدخالي:", error.message);
+        });
     } catch (error) {
         console.error("❌ [Toriel Sound] فشل إنشاء مصدر الصوت بالكامل:", error);
     }
@@ -100,7 +111,7 @@ client.on('voiceStateUpdate', (oldState, newState) => {
         if (connection && connection.joinConfig.channelId === newState.channelId) {
             console.log(`👤 ${newState.member?.user.tag} دخل الروم، جاري تشغيل الترحيب بعد 3 ثوانٍ...`);
             
-            // الانتظار لمدة 3 ثوانٍ كاملة قبل الترحيب
+            // التوقيت الموزون 3 ثوانٍ بناءً على طلبك
             setTimeout(() => {
                 playGreetingSound(connection);
             }, 3000);
