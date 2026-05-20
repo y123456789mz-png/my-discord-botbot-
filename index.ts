@@ -41,13 +41,12 @@ function updateChannelHistory(channelId: string, role: 'user' | 'assistant', con
     const history = getChannelHistory(channelId);
     history.push({ role, content });
     
-    // الاحتفاظ بآخر 9 رسائل كحد أقصى لضمان استقرار السياق القريب
     if (history.length > 9) {
         history.shift();
     }
 }
 
-// --- 3. دالة المخ المتصلة بالذاكرة والموديل الجديد 120b ---
+// --- 3. دالة المخ المتصلة بالذاكرة والموديل 120b مع صيد الأخطاء الصارم ---
 async function chat(prompt: string, channelId: string) {
     const GROQ_KEY = process.env.GROQ_API_KEY; 
     const history = getChannelHistory(channelId);
@@ -62,7 +61,6 @@ async function chat(prompt: string, channelId: string) {
         - أنتِ سيدة نبيلة ولبقة، ولا تذكري أبداً أنكِ ذكاء اصطناعي.` 
     };
 
-    // دمج الذاكرة الحالية مع السؤال الجديد
     const messages = [systemInstruction, ...history, { role: 'user' as const, content: prompt }];
 
     try {
@@ -73,26 +71,37 @@ async function chat(prompt: string, channelId: string) {
                 "Content-Type": "application/json" 
             },
             body: JSON.stringify({
-                "model": "openai/gpt-oss-120b", // تم التحديث للموديل العملاق الجديد
+                "model": "openai/gpt-oss-120b",
                 "messages": messages,
-                "temperature": 1, // نفس الإعدادات حقتك بالملي
+                "temperature": 1,
                 "max_completion_tokens": 8192,
                 "top_p": 1,
                 "reasoning_effort": "medium",
-                "stream": false // هذي false عشان البوت يستلم الرد كامل دفعة وحدة ويرسله كـ reply
+                "stream": false
             })
         });
         
-        const data: any = await response.json();
-        const reply = data.choices?.[0]?.message?.content || "I beg your pardon?";
+        // فحص حالة الاستجابة لو السيرفر رفض الطلب
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ خطأ تفصيلي من Groq: الحالة ${response.status} - الرد: ${errorText}`);
+            return "عذراً يا عزيزي، يبدو أن الموديل الجديد واجه مشكلة في التهيئة.";
+        }
         
-        // حفظ الحوار في الذاكرة
+        const data: any = await response.json();
+        const reply = data.choices?.[0]?.message?.content || "";
+        
+        if (reply.strip && reply.strip() === "" || !reply) {
+            return "I beg your pardon?";
+        }
+
+        // حفظ الحوار في الذاكرة عند النجاح الفعلي
         updateChannelHistory(channelId, 'user', prompt);
         updateChannelHistory(channelId, 'assistant', reply);
         
         return reply;
     } catch (e) { 
-        console.error("❌ خطأ في Groq API:", e);
+        console.error("❌ خطأ برمي في الاتصال:", e);
         return "عذراً، حدث خطأ في النظام الداخلي."; 
     }
 }
