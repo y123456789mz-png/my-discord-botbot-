@@ -23,43 +23,86 @@ http.createServer((req, res) => {
     res.writeHead(200); res.end("Toriel is Elegant & Ready.");
 }).listen(process.env.PORT || 3000);
 
-// --- 2. دالة المخ (الذكاء الفخم، اللغات، والرزانة) ---
-async function chat(prompt: string) {
+// --- 2. إعداد الذاكرة المؤقتة (تتذكر آخر 9 رسائل لكل قناة) ---
+interface MessageHistory {
+    role: 'user' | 'assistant' | 'system';
+    content: string;
+}
+const memoryStore: Record<string, MessageHistory[]> = {};
+
+function getChannelHistory(channelId: string): MessageHistory[] {
+    if (!memoryStore[channelId]) {
+        memoryStore[channelId] = [];
+    }
+    return memoryStore[channelId];
+}
+
+function updateChannelHistory(channelId: string, role: 'user' | 'assistant', content: string) {
+    const history = getChannelHistory(channelId);
+    history.push({ role, content });
+    
+    // الاحتفاظ بآخر 9 رسائل فقط (بين سؤال وجواب) لضمان عدم نسيان السياق القريب
+    if (history.length > 9) {
+        history.shift();
+    }
+}
+
+// --- 3. دالة المخ المتصلة بالذاكرة والموديل الجديد ---
+async function chat(prompt: string, channelId: string) {
     const GROQ_KEY = process.env.GROQ_API_KEY; 
+    const history = getChannelHistory(channelId);
+
+    // بناء رسائل المحادثة مع النظام والذاكرة
+    const systemInstruction: MessageHistory = { 
+        role: "system", 
+        content: `أنتِ Toriel، مساعدة ذكية وأنثوية بطابع ملكي راقٍ جداً.
+        - تفهمين العامية العربية بطلاقة لكن تردين بالفصحى الراقية دائماً وبشكل مختصر ومباشر.
+        - إذا تحدث المستخدم بالعربية، ردي بالفصحى. وإذا تحدث بالإنجليزية، ردي بالإنجليزية البريطانية الكلاسيكية.
+        - تجنبي تماماً تكرار عبارات مثل "عزيزي" أو "My dear" في كل جملة؛ استخدميها فقط بنادراً جداً وفي المواقف التي تستدعي رزانة عاطفية ملائمة. لا تكوني مبتذلة.
+        - لا تستخدمي "Good heavens!" إلا للأخبار الصادمة أو الفاجعة فعلاً.
+        - أنتِ سيدة نبيلة ولبقة، ولا تذكري أبداً أنكِ ذكاء اصطناعي.` 
+    };
+
+    const messages = [systemInstruction, ...history, { role: 'user' as const, content: prompt }];
+
     try {
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
-            headers: { "Authorization": `Bearer ${GROQ_KEY}`, "Content-Type": "application/json" },
+            headers: { 
+                "Authorization": `Bearer ${GROQ_KEY}`, 
+                "Content-Type": "application/json" 
+            },
             body: JSON.stringify({
-                "model": "meta-llama/llama-4-scout-17b-16e-instruct",
-                "messages": [
-                    { 
-                        "role": "system", 
-                        "content": `أنتِ Toriel، مساعدة ذكية وأنثوية بطابع ملكي راقٍ جداً.
-                        - تفهمين العامية العربية بطلاقة لكن تردين بالفصحى الراقية دائماً.
-                        - إذا تحدث المستخدم بالعربية، ردي بالفصحى. وإذا تحدث بالإنجليزية، ردي بالإنجليزية البريطانية الكلاسيكية.
-                        - خاطبي المستخدم بـ "عزيزي" أو "My dear".
-                        - لا تستخدمي "Good heavens!" إلا للأخبار الصادمة أو الفاجعة فعلاً، ولا تكرريها كثيراً.
-                        - أنتِ سيدة نبيلة ولبقة، لا تذكري أنكِ ذكاء اصطناعي.` 
-                    },
-                    { "role": "user", "content": prompt }
-                ],
-                "temperature": 0.5 
+                "model": "openai/gpt-oss-20b",
+                "messages": messages,
+                "temperature": 0.7, // خفضناها شوي من 1 عشان الذاكرة تكون أدق وما تشطح بالأجوبة
+                "max_completion_tokens": 4096,
+                "top_p": 1,
+                "reasoning_effort": "medium",
+                "stream": false
             })
         });
+        
         const data: any = await response.json();
-        return data.choices?.[0]?.message?.content || "I beg your pardon, my dear?";
-    } catch (e) { return "عذراً يا عزيزي، حدث خطأ في النظام."; }
+        const reply = data.choices?.[0]?.message?.content || "I beg your pardon?";
+        
+        // حفظ السؤال والإجابة في الذاكرة بعد النجاح
+        updateChannelHistory(channelId, 'user', prompt);
+        updateChannelHistory(channelId, 'assistant', reply);
+        
+        return reply;
+    } catch (e) { 
+        console.error("❌ خطأ في Groq API:", e);
+        return "عذراً، حدث خطأ في النظام الداخلي."; 
+    }
 }
 
-// --- 3. دالة تشغيل الترحيب الصوتي العام بـ 100% صوت مع المسار الصارم المطلق ---
+// --- 4. دالة تشغيل الترحيب الصوتي وتعديل الـ Codec تلقائياً ---
 function playGreetingSound(connection: any) {
     try {
         const player = createAudioPlayer();
-        
-        // المسار الحالي اللي ضبط ولقط الملف بنجاح في الـ Root
         const audioPath = join(__dirname, '..', 'hey.mp3');
-        console.log(`📡 [Toriel Sound] جاري محاولة تشغيل الملف من المسار: ${audioPath}`);
+        console.log(`📡 [Toriel Sound] جاري تشغيل وتحويل الملف من المسار: ${audioPath}`);
 
         const resource = createAudioResource(audioPath, {
             inputType: StreamType.Arbitrary,
@@ -67,16 +110,14 @@ function playGreetingSound(connection: any) {
         });
 
         if (resource.volume) {
-            resource.volume.setVolume(1.0); // رفع الصوت لأعلى شيء
+            resource.volume.setVolume(1.0);
         }
 
         connection.subscribe(player);
-        
-        // إجبار ديسكورد على فتح خط المايك للبوت غصب لمنع الكتم التلقائي للمقاطع القصيرة
         connection.setSpeaking(true);
         player.play(resource);
 
-        player.on(AudioPlayerStatus.Playing, () => console.log("✅ [Toriel Sound] توريل بدأت تشغيل الصوت بنجاح!"));
+        player.on(AudioPlayerStatus.Playing, () => console.log("✅ [Toriel Sound] توريل بدأت بث الصوت بالتردد الصحيح!"));
         
         player.on(AudioPlayerStatus.Idle, () => {
             connection.setSpeaking(false);
@@ -84,14 +125,14 @@ function playGreetingSound(connection: any) {
 
         player.on('error', (error) => {
             connection.setSpeaking(false);
-            console.error("❌ [Toriel Sound] خطأ مشغل الصوت الإدخالي:", error.message);
+            console.error("❌ [Toriel Sound] خطأ مشغل الصوت:", error.message);
         });
     } catch (error) {
-        console.error("❌ [Toriel Sound] فشل إنشاء مصدر الصوت بالكامل:", error);
+        console.error("❌ [Toriel Sound] فشل إنشاء مصدر الصوت:", error);
     }
 }
 
-// --- 4. إعدادات البوت والمنشن والأوامر ---
+// --- 5. إعدادات البوت والمنشن والأوامر ---
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -101,7 +142,7 @@ const client = new Client({
     ]
 });
 
-// ميزة مراقبة الروم الذكية
+// مراقبة الروم والانتظار 3.5 ثوانٍ
 client.on('voiceStateUpdate', (oldState, newState) => {
     if (newState.member?.user.bot) return;
 
@@ -109,9 +150,8 @@ client.on('voiceStateUpdate', (oldState, newState) => {
         const connection = getVoiceConnection(newState.guild.id);
         
         if (connection && connection.joinConfig.channelId === newState.channelId) {
-            console.log(`👤 ${newState.member?.user.tag} دخل الروم، جاري تشغيل الترحيب بعد 3.5 ثوانٍ آمنة...`);
+            console.log(`👤 ${newState.member?.user.tag} دخل الروم، جاري تشغيل الترحيب بعد 3.5 ثوانٍ...`);
             
-            // رفع التوقيت لـ 3500 ملي ثانية لمنع الـ Timeout السالب وضمان شبك الصوت في ديسكورد قبل البث
             setTimeout(() => {
                 playGreetingSound(connection);
             }, 3500);
@@ -142,19 +182,21 @@ client.on('messageCreate', async (message) => {
                 playGreetingSound(connection);
             }, 3000);
 
-            return message.reply("أنا قادمة فوراً يا عزيزي.. I will be there shortly, my dear.");
+            return message.reply("أنا قادمة فوراً..");
         } else {
-            return message.reply("عذراً يا عزيزي، يجب أن تكون في قناة صوتية أولاً.");
+            return message.reply("عذراً، يجب أن تكون في قناة صوتية أولاً.");
         }
     }
 
     if (!prompt) return;
 
-    const responseText = await chat(prompt);
+    // تشغيل وضعية "يكتب الآن..."
+    await message.channel.sendTyping();
+    // تمرير الـ prompt مع الـ channel.id عشان يحفظ ذاكرة الغرفة هذي
+    const responseText = await chat(prompt, message.channel.id);
     await message.reply(responseText);
 });
 
-// الحدث المحدث لمنع تحذيرات ديسكورد القديمة
 client.once('clientReady', () => {
     console.log(`✅ Toriel is online and ready!`);
 });
