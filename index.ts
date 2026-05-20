@@ -46,7 +46,7 @@ function updateChannelHistory(channelId: string, role: 'user' | 'assistant', con
     }
 }
 
-// --- 3. دالة المخ المتصلة بالذاكرة والموديل الجديد ---
+// --- 3. دالة المخ المتصلة بالذاكرة والموديل المضمون والسريع من Groq ---
 async function chat(prompt: string, channelId: string) {
     const GROQ_KEY = process.env.GROQ_API_KEY; 
     const history = getChannelHistory(channelId);
@@ -71,10 +71,10 @@ async function chat(prompt: string, channelId: string) {
                 "Content-Type": "application/json" 
             },
             body: JSON.stringify({
-                "model": "openai/gpt-oss-120b",
+                "model": "llama-3.3-70b-specdec", // الموديل المضمون والسريع جداً على Groq
                 "messages": messages,
-                "temperature": 1,
-                "max_completion_tokens": 8192,
+                "temperature": 0.8, // وزنية ممتازة للحفاظ على رزانة الأجوبة
+                "max_completion_tokens": 4096,
                 "top_p": 1,
                 "stream": false
             })
