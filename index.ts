@@ -23,7 +23,7 @@ http.createServer((req, res) => {
     res.writeHead(200); res.end("Toriel is Elegant & Ready.");
 }).listen(process.env.PORT || 3000);
 
-// --- 2. إعداد الذاكرة المؤقتة (تتذكر آخر 9 رسائل لكل قناة) ---
+// --- 2. إعداد الذاكرة المؤقتة (تتذكر من 5 إلى 9 رسائل لكل قناة) ---
 interface MessageHistory {
     role: 'user' | 'assistant' | 'system';
     content: string;
@@ -41,18 +41,17 @@ function updateChannelHistory(channelId: string, role: 'user' | 'assistant', con
     const history = getChannelHistory(channelId);
     history.push({ role, content });
     
-    // الاحتفاظ بآخر 9 رسائل فقط (بين سؤال وجواب) لضمان عدم نسيان السياق القريب
+    // الاحتفاظ بآخر 9 رسائل كحد أقصى لضمان استقرار السياق القريب
     if (history.length > 9) {
         history.shift();
     }
 }
 
-// --- 3. دالة المخ المتصلة بالذاكرة والموديل الجديد ---
+// --- 3. دالة المخ المتصلة بالذاكرة والموديل الجديد 120b ---
 async function chat(prompt: string, channelId: string) {
     const GROQ_KEY = process.env.GROQ_API_KEY; 
     const history = getChannelHistory(channelId);
 
-    // بناء رسائل المحادثة مع النظام والذاكرة
     const systemInstruction: MessageHistory = { 
         role: "system", 
         content: `أنتِ Toriel، مساعدة ذكية وأنثوية بطابع ملكي راقٍ جداً.
@@ -63,6 +62,7 @@ async function chat(prompt: string, channelId: string) {
         - أنتِ سيدة نبيلة ولبقة، ولا تذكري أبداً أنكِ ذكاء اصطناعي.` 
     };
 
+    // دمج الذاكرة الحالية مع السؤال الجديد
     const messages = [systemInstruction, ...history, { role: 'user' as const, content: prompt }];
 
     try {
@@ -73,20 +73,20 @@ async function chat(prompt: string, channelId: string) {
                 "Content-Type": "application/json" 
             },
             body: JSON.stringify({
-                "model": "openai/gpt-oss-20b",
+                "model": "openai/gpt-oss-120b", // تم التحديث للموديل العملاق الجديد
                 "messages": messages,
-                "temperature": 0.7, // خفضناها شوي من 1 عشان الذاكرة تكون أدق وما تشطح بالأجوبة
-                "max_completion_tokens": 4096,
+                "temperature": 1, // نفس الإعدادات حقتك بالملي
+                "max_completion_tokens": 8192,
                 "top_p": 1,
                 "reasoning_effort": "medium",
-                "stream": false
+                "stream": false // هذي false عشان البوت يستلم الرد كامل دفعة وحدة ويرسله كـ reply
             })
         });
         
         const data: any = await response.json();
         const reply = data.choices?.[0]?.message?.content || "I beg your pardon?";
         
-        // حفظ السؤال والإجابة في الذاكرة بعد النجاح
+        // حفظ الحوار في الذاكرة
         updateChannelHistory(channelId, 'user', prompt);
         updateChannelHistory(channelId, 'assistant', reply);
         
@@ -97,7 +97,7 @@ async function chat(prompt: string, channelId: string) {
     }
 }
 
-// --- 4. دالة تشغيل الترحيب الصوتي وتعديل الـ Codec تلقائياً ---
+// --- 4. دالة تشغيل الترحيب الصوتي وتعديل الـ Codec تلقائياً عن طريق ffmpeg ---
 function playGreetingSound(connection: any) {
     try {
         const player = createAudioPlayer();
@@ -105,12 +105,12 @@ function playGreetingSound(connection: any) {
         console.log(`📡 [Toriel Sound] جاري تشغيل وتحويل الملف من المسار: ${audioPath}`);
 
         const resource = createAudioResource(audioPath, {
-            inputType: StreamType.Arbitrary,
+            inputType: StreamType.Arbitrary, 
             inlineVolume: true
         });
 
         if (resource.volume) {
-            resource.volume.setVolume(1.0);
+            resource.volume.setVolume(1.0); 
         }
 
         connection.subscribe(player);
@@ -190,9 +190,8 @@ client.on('messageCreate', async (message) => {
 
     if (!prompt) return;
 
-    // تشغيل وضعية "يكتب الآن..."
+    // تشغيل وضعية "يكتب الآن..." في ديسكورد
     await message.channel.sendTyping();
-    // تمرير الـ prompt مع الـ channel.id عشان يحفظ ذاكرة الغرفة هذي
     const responseText = await chat(prompt, message.channel.id);
     await message.reply(responseText);
 });
