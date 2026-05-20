@@ -46,7 +46,7 @@ function updateChannelHistory(channelId: string, role: 'user' | 'assistant', con
     }
 }
 
-// --- 3. دالة المخ المتصلة بالذاكرة والموديل 120b مع صيد الأخطاء الصارم ---
+// --- 3. دالة المخ المتصلة بالذاكرة والموديل الجديد ---
 async function chat(prompt: string, channelId: string) {
     const GROQ_KEY = process.env.GROQ_API_KEY; 
     const history = getChannelHistory(channelId);
@@ -76,26 +76,24 @@ async function chat(prompt: string, channelId: string) {
                 "temperature": 1,
                 "max_completion_tokens": 8192,
                 "top_p": 1,
-                "reasoning_effort": "medium",
                 "stream": false
             })
         });
         
-        // فحص حالة الاستجابة لو السيرفر رفض الطلب
         if (!response.ok) {
             const errorText = await response.text();
             console.error(`❌ خطأ تفصيلي من Groq: الحالة ${response.status} - الرد: ${errorText}`);
-            return "عذراً يا عزيزي، يبدو أن الموديل الجديد واجه مشكلة في التهيئة.";
+            return "عذراً، يبدو أن النظام واجه مشكلة في معالجة الطلب حالياً.";
         }
         
         const data: any = await response.json();
         const reply = data.choices?.[0]?.message?.content || "";
         
-        if (reply.strip && reply.strip() === "" || !reply) {
+        if (!reply || reply.trim() === "") {
             return "I beg your pardon?";
         }
 
-        // حفظ الحوار في الذاكرة عند النجاح الفعلي
+        // حفظ الحوار في الذاكرة عند النجاح
         updateChannelHistory(channelId, 'user', prompt);
         updateChannelHistory(channelId, 'assistant', reply);
         
@@ -106,7 +104,7 @@ async function chat(prompt: string, channelId: string) {
     }
 }
 
-// --- 4. دالة تشغيل الترحيب الصوتي وتعديل الـ Codec تلقائياً عن طريق ffmpeg ---
+// --- 4. دالة تشغيل الترحيب الصوتي وتعديل الـ Codec تلقائياً ---
 function playGreetingSound(connection: any) {
     try {
         const player = createAudioPlayer();
@@ -151,7 +149,6 @@ const client = new Client({
     ]
 });
 
-// مراقبة الروم والانتظار 3.5 ثوانٍ
 client.on('voiceStateUpdate', (oldState, newState) => {
     if (newState.member?.user.bot) return;
 
@@ -160,7 +157,6 @@ client.on('voiceStateUpdate', (oldState, newState) => {
         
         if (connection && connection.joinConfig.channelId === newState.channelId) {
             console.log(`👤 ${newState.member?.user.tag} دخل الروم، جاري تشغيل الترحيب بعد 3.5 ثوانٍ...`);
-            
             setTimeout(() => {
                 playGreetingSound(connection);
             }, 3500);
@@ -176,7 +172,6 @@ client.on('messageCreate', async (message) => {
 
     const prompt = message.content.replace(new RegExp(`<@!?${client.user!.id}>`, 'g'), '').trim();
 
-    // أمر الانضمام
     if (prompt.toLowerCase() === 'join' || prompt === '/join' || prompt === 'انضمي') {
         if (message.member?.voice.channel) {
             const connection = joinVoiceChannel({
@@ -186,11 +181,9 @@ client.on('messageCreate', async (message) => {
                 selfDeaf: false,
                 selfMute: false
             });
-            
             setTimeout(() => {
                 playGreetingSound(connection);
             }, 3000);
-
             return message.reply("أنا قادمة فوراً..");
         } else {
             return message.reply("عذراً، يجب أن تكون في قناة صوتية أولاً.");
@@ -199,7 +192,6 @@ client.on('messageCreate', async (message) => {
 
     if (!prompt) return;
 
-    // تشغيل وضعية "يكتب الآن..." في ديسكورد
     await message.channel.sendTyping();
     const responseText = await chat(prompt, message.channel.id);
     await message.reply(responseText);
