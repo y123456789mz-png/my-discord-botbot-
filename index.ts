@@ -36,14 +36,14 @@ function updateChannelHistory(channelId: string, role: 'user' | 'assistant', con
     if (history.length > 9) history.shift();
 }
 
-// روابط GIFs أنمي مباشرة وصافية متوافقة مع ديسكورد 100% لتظهر كـ GIF مدمج من المنصة
-function getRandomDiscordGif(): string {
+// قائمة روابط GIFs أنمي رسمية من سيرفرات ديسكورد و Tenor المباشرة الشغالة فوراً
+function getNativeDiscordGif(): string {
     const gifs = [
-        'https://images.squarespace-cdn.com/content/v1/5fe4cae33ca0736029fe2b2c/1612866946637-I84F9CCVCH6KFAJ2Q73L/anime-tea.gif',
-        'https://i.getgify.com/39V.gif',
-        'https://i.getgify.com/134Kfzd7fUf2ve.gif',
-        'https://i.getgify.com/d9Xnks8vUis7K.gif',
-        'https://i.getgify.com/11HeublhIqClY4.gif'
+        'https://tenor.com/view/anime-tea-gif-25112101',
+        'https://tenor.com/view/anime-smile-gif-18115664',
+        'https://tenor.com/view/violet-evergarden-anime-gif-12104391',
+        'https://tenor.com/view/anime-wave-hello-gif-20516422',
+        'https://tenor.com/view/anime-reading-book-gif-24411905'
     ];
     return gifs[Math.floor(Math.random() * gifs.length)];
 }
@@ -95,9 +95,8 @@ async function handleGroqStream(prompt: string, message: any) {
         }
 
         if (fullResponse.trim().length > 0) {
-            // هنا ندمج النص مع رابط الـ GIF المباشر في رسالة واحدة بعد اكتمال البث
-            // الديسكورد تلقائياً بيقرأ الرابط ويفتحه كـ GIF طبيعي من الديسكورد نفسه
-            const gifUrl = getRandomDiscordGif();
+            // ندمج النص مع رابط ديسكورد الرسمي للـ GIF المباشر، ديسكورد بيعرضه كـ Native GIF فورا
+            const gifUrl = getNativeDiscordGif();
             const finalMessage = `${fullResponse}\n${gifUrl}`;
 
             await replyMessage.edit({ content: finalMessage });
@@ -133,7 +132,7 @@ client.on('messageCreate', async (message) => {
 });
 
 client.once('ready', () => {
-    console.log(`✅ Toriel جاهزة ومحدثة بنظام الـ GIFs المدمج بحساب: ${client.user?.tag}`);
+    console.log(`✅ Toriel جاهزة ومحدثة تماماً بدون مفاتيح خارجية بحساب: ${client.user?.tag}`);
 });
 
 client.login(process.env.DISCORD_TOKEN);
