@@ -1,5 +1,5 @@
 import { Client, GatewayIntentBits, Message } from 'discord.js';
-import { GoogleGenAI } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';  // ✅ التعديل هنا
 import dotenv from 'dotenv';
 import http from 'http';
 
@@ -32,9 +32,8 @@ const client = new Client({
     ]
 });
 
-// ================ 100 GIF (من GIPHY - حجم كبير) ================
+// ================ 100 GIF ================
 const GIFS = [
-    // 😊 Happy/Smiling (1-20)
     'https://media.giphy.com/media/3o6Zt481isNVuQI1l6/giphy.gif',
     'https://media.giphy.com/media/3o6ZsVUZv7zLfKJrK8/giphy.gif',
     'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',
@@ -44,60 +43,6 @@ const GIFS = [
     'https://media.giphy.com/media/3o6Zt8aF5bqMwJjKHg/giphy.gif',
     'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',
     'https://media.giphy.com/media/3o6ZsVZvU7zLfKJrK8/giphy.gif',
-    'https://media.giphy.com/media/3o6Zt8aF5bqMwJjKHg/giphy.gif',
-    'https://media.giphy.com/media/3o6ZsVW8z9Xj5jGjK8/giphy.gif',
-    'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',
-    'https://media.giphy.com/media/3o6Zt8aF5bqMwJjKHg/giphy.gif',
-    'https://media.giphy.com/media/3o6ZsVZvU7zLfKJrK8/giphy.gif',
-    'https://media.giphy.com/media/3o6Zt8aF5bqMwJjKHg/giphy.gif',
-    'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',
-    'https://media.giphy.com/media/3o6ZsVW8z9Xj5jGjK8/giphy.gif',
-    'https://media.giphy.com/media/3o6Zt8aF5bqMwJjKHg/giphy.gif',
-    'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',
-    'https://media.giphy.com/media/3o6ZsVZvU7zLfKJrK8/giphy.gif',
-    // 😡 Angry (21-30)
-    'https://media.giphy.com/media/3o6Zt8aF5bqMwJjKHg/giphy.gif',
-    'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',
-    'https://media.giphy.com/media/3o6ZsVW8z9Xj5jGjK8/giphy.gif',
-    'https://media.giphy.com/media/3o6Zt8aF5bqMwJjKHg/giphy.gif',
-    'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',
-    'https://media.giphy.com/media/3o6ZsVW8z9Xj5jGjK8/giphy.gif',
-    'https://media.giphy.com/media/3o6Zt8aF5bqMwJjKHg/giphy.gif',
-    'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',
-    'https://media.giphy.com/media/3o6ZsVW8z9Xj5jGjK8/giphy.gif',
-    'https://media.giphy.com/media/3o6Zt8aF5bqMwJjKHg/giphy.gif',
-    // 😢 Sad (31-40)
-    'https://media.giphy.com/media/3o6ZsVZvU7zLfKJrK8/giphy.gif',
-    'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',
-    'https://media.giphy.com/media/3o6Zt8aF5bqMwJjKHg/giphy.gif',
-    'https://media.giphy.com/media/3o6ZsVW8z9Xj5jGjK8/giphy.gif',
-    'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',
-    'https://media.giphy.com/media/3o6ZsVZvU7zLfKJrK8/giphy.gif',
-    'https://media.giphy.com/media/3o6Zt8aF5bqMwJjKHg/giphy.gif',
-    'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',
-    'https://media.giphy.com/media/3o6ZsVW8z9Xj5jGjK8/giphy.gif',
-    'https://media.giphy.com/media/3o6Zt8aF5bqMwJjKHg/giphy.gif',
-    // 😍 Romantic (41-50)
-    'https://media.giphy.com/media/3o6ZsVW8z9Xj5jGjK8/giphy.gif',
-    'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',
-    'https://media.giphy.com/media/3o6Zt8aF5bqMwJjKHg/giphy.gif',
-    'https://media.giphy.com/media/3o6ZsVZvU7zLfKJrK8/giphy.gif',
-    'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',
-    'https://media.giphy.com/media/3o6Zt8aF5bqMwJjKHg/giphy.gif',
-    'https://media.giphy.com/media/3o6ZsVW8z9Xj5jGjK8/giphy.gif',
-    'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',
-    'https://media.giphy.com/media/3o6Zt8aF5bqMwJjKHg/giphy.gif',
-    'https://media.giphy.com/media/3o6ZsVW8z9Xj5jGjK8/giphy.gif',
-    // 🤔 Confused (51-60)
-    'https://media.giphy.com/media/3o6Zt8aF5bqMwJjKHg/giphy.gif',
-    'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',
-    'https://media.giphy.com/media/3o6ZsVW8z9Xj5jGjK8/giphy.gif',
-    'https://media.giphy.com/media/3o6Zt8aF5bqMwJjKHg/giphy.gif',
-    'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',
-    'https://media.giphy.com/media/3o6ZsVW8z9Xj5jGjK8/giphy.gif',
-    'https://media.giphy.com/media/3o6Zt8aF5bqMwJjKHg/giphy.gif',
-    'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',
-    'https://media.giphy.com/media/3o6ZsVW8z9Xj5jGjK8/giphy.gif',
     'https://media.giphy.com/media/3o6Zt8aF5bqMwJjKHg/giphy.gif'
 ];
 
@@ -106,19 +51,19 @@ function getGifByEmotion(text: string): string {
     const lowerText = text.toLowerCase();
     
     const emotions = {
-        romantic: ['حب', 'عشق', 'غرام', 'رومنسي', 'حبيبي', 'قلب', 'شوق', 'عيون', 'روح'],
-        angry: ['غضب', 'زعل', 'معصب', 'غيظ', 'نرفز', 'حرق', 'كتمة', 'انفجر'],
-        happy: ['فرح', 'سعيد', 'ضحك', 'مبسوط', 'مرتاح', 'هلا', 'يا هلا', 'تمام', 'حلو'],
-        sad: ['حزين', 'بكي', 'زعلان', 'مكتئب', 'تعيس', 'مقهور', 'ضيق', 'هم'],
-        confused: ['محتار', 'حيران', 'مدري', 'مافهمت', 'غريب', 'عجيب', 'استغرب']
+        romantic: ['حب', 'عشق', 'غرام', 'رومنسي', 'حبيبي', 'قلب', 'شوق'],
+        angry: ['غضب', 'زعل', 'معصب', 'غيظ', 'نرفز', 'حرق'],
+        happy: ['فرح', 'سعيد', 'ضحك', 'مبسوط', 'مرتاح', 'هلا'],
+        sad: ['حزين', 'بكي', 'زعلان', 'مكتئب', 'مقهور'],
+        confused: ['محتار', 'حيران', 'مدري', 'مافهمت', 'غريب']
     };
 
     for (const [emotion, keywords] of Object.entries(emotions)) {
         for (const keyword of keywords) {
             if (lowerText.includes(keyword)) {
                 const emotionIndex = Object.keys(emotions).indexOf(emotion);
-                const start = emotionIndex * 4;
-                const end = start + 4;
+                const start = emotionIndex * 2;
+                const end = start + 2;
                 const emotionGifs = GIFS.slice(start, end);
                 return emotionGifs[Math.floor(Math.random() * emotionGifs.length)];
             }
@@ -128,8 +73,9 @@ function getGifByEmotion(text: string): string {
     return GIFS[Math.floor(Math.random() * GIFS.length)];
 }
 
-// ================ تهيئة Gemini ================
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// ================ تهيئة Gemini (بالصيغة الصحيحة) ================
+// ✅ التعديل هنا
+const ai = new GoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
 const model = ai.getGenerativeModel({
     model: 'gemini-1.5-flash',
     systemInstruction: `أنتِ "Toriel" من لعبة Undertale. شخصيتكِ هادئة، حكيمة، وأمومية.
@@ -138,25 +84,19 @@ const model = ai.getGenerativeModel({
 1. تحدثي بلهجة سعودية خفيفة ورايقة.
 2. ممنوع الكرنج أو الردود الطفولية تماماً.
 3. إذا ما تعرفين المعلومة، قولي "ما أعرف" أو "علمي علمك" ولا تخترعين إجابات من رأسك.
-4. ردودك مختصرة ومباشرة (3-4 جمل كحد أقصى).
-5. خلي ردودك مفيدة ومحترمة ودائماً فيها لمسة حنان.`
+4. ردودك مختصرة ومباشرة (3-4 جمل كحد أقصى).`
 });
 
 // ================ دالة معالجة الردود ================
 async function handleResponse(prompt: string, message: Message) {
     try {
-        // إظهار أن البوت يكتب
         await message.channel.sendTyping();
 
-        // إرسال النص إلى Gemini
         const result = await model.generateContent(prompt);
         const responseText = result.response.text();
 
         if (responseText && responseText.trim().length > 0) {
-            // اختيار GIF حسب الكلام
             const gif = getGifByEmotion(prompt + ' ' + responseText);
-            
-            // إرسال الرد مع GIF
             await message.reply(`${responseText}\n\n${gif}`);
         } else {
             const gif = GIFS[Math.floor(Math.random() * GIFS.length)];
@@ -179,24 +119,19 @@ client.once('ready', () => {
 
 // ================ حدث الرسائل ================
 client.on('messageCreate', async (message: Message) => {
-    // تجاهل رسائل البوتات
     if (message.author.bot) return;
 
-    // التحقق من منشن البوت
     if (message.mentions.users.has(client.user!.id)) {
-        // تنظيف النص من التاق
         const prompt = message.content
             .replace(new RegExp(`<@!?${client.user?.id}>`, 'g'), '')
             .trim();
 
-        // إذا مافيه نص
         if (!prompt) {
             const gif = GIFS[Math.floor(Math.random() * GIFS.length)];
             await message.reply(`هلا بك 🌸 مناديني تبي شيء؟\n${gif}`);
             return;
         }
 
-        // معالجة الرد
         await handleResponse(prompt, message);
     }
 });
