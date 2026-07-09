@@ -5,20 +5,22 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// سيرفر وهمي للـ Render
 http.createServer((req, res) => {
-    res.writeHead(200); res.end("Toriel is Active.");
+    res.writeHead(200); res.end("Toriel is Stable.");
 }).listen(process.env.PORT || 3000);
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
 });
 
-// روابط Klipy اللي أنت جبتها، ديسكورد يفتحه كـ Native GIF
-const klipyGifs = [
-    'https://klipy.com/gifs/osaka-spin-3',
-    'https://klipy.com/gifs/anime-tea-drinking',
-    'https://klipy.com/gifs/anime-wave-hello',
-    'https://klipy.com/gifs/anime-smile-happy'
+// لستة روابط مباشرة ومضمونة 100%، ديسكورد يعرضها كصورة بدون روابط
+const fixedGifs = [
+    'https://media1.tenor.com/m/1l6G7L7Y9YAAAAAd/osaka-azumanga-daioh.gif',
+    'https://media1.tenor.com/m/a-4467qZq2kAAAAd/anime-tea.gif',
+    'https://media1.tenor.com/m/h9s1-L7fS6UAAAAd/anime-wave.gif',
+    'https://media1.tenor.com/m/Z619x33eD0cAAAAd/anime-smile.gif',
+    'https://media1.tenor.com/m/2e_dM-uQk-kAAAAd/reading-book-anime.gif'
 ];
 
 async function handleResponse(prompt: string, message: any) {
@@ -26,18 +28,18 @@ async function handleResponse(prompt: string, message: any) {
     
     try {
         const chat = await groq.chat.completions.create({
-            messages: [{ role: 'system', content: "رد مختصر جداً" }, { role: 'user', content: prompt }],
+            messages: [{ role: 'system', content: "أنتِ Toriel، ردودك مختصرة جداً ومباشرة." }, { role: 'user', content: prompt }],
             model: 'meta-llama/llama-4-scout-17b-16e-instruct',
         });
 
         const reply = chat.choices[0].message.content;
-        const gif = klipyGifs[Math.floor(Math.random() * klipyGifs.length)];
+        const gif = fixedGifs[Math.floor(Math.random() * fixedGifs.length)];
         
-        // نرسل النص وبعده الرابط مباشرة، ديسكورد بيحوله لـ GIF تلقائي
+        // نرسل النص، والديسكورد بيعرض الصورة تحتها تلقائياً بدون ما يبين الرابط "كنص"
         await message.reply(`${reply}\n${gif}`);
         
     } catch (err) {
-        console.error(err);
+        console.error("خطأ في معالجة الرد:", err);
     }
 }
 
