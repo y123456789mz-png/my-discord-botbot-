@@ -3,12 +3,16 @@ import {
     joinVoiceChannel, 
     createAudioPlayer, 
     createAudioResource, 
-    StreamType
+    StreamType,
+    AudioPlayerStatus,
+    NoSubscriberBehavior
 } from '@discordjs/voice';
 import http from 'http';
 import { join } from 'path';
 import Groq from 'groq-sdk';
 import dotenv from 'dotenv';
+// استدعاء حزمة التشفير إجبارياً هنا ليفهمها رندر
+import 'libsodium-wrappers'; 
 
 dotenv.config();
 
@@ -44,21 +48,36 @@ function updateChannelHistory(channelId: string, role: 'user' | 'assistant', con
     if (history.length > 9) history.shift();
 }
 
-// دالة تشغيل صوت الترحيب في الـ VC
+// دالة تشغيل صوت الترحيب المعدلة والمضمونة للرندر
 function playGreetingSound(connection: any) {
     try {
-        const player = createAudioPlayer();
+        // إعداد المشغل مع سلوك عدم وجود مستمعين لمنع التعليق
+        const player = createAudioPlayer({
+            behaviors: {
+                noSubscriber: NoSubscriberBehavior.Play
+            }
+        });
+        
         const soundPath = join(process.cwd(), 'hey.mp3'); 
+        
+        // تحويل الصوت وتمريره بنظام Arbitrary المدعوم من ffmpeg-static
         const resource = createAudioResource(soundPath, {
             inputType: StreamType.Arbitrary,
+            inlineVolume: true
         });
+
+        resource.volume?.setVolume(0.8); // رفع مستوى الصوت لـ 80%
 
         player.play(resource);
         connection.subscribe(player);
 
-        console.log("📡 [Toriel Sound] تم تشغيل صوت الترحيب بنجاح.");
+        player.on('error', error => {
+            console.error('❌ [Toriel Audio Player Error]:', error.message);
+        });
+
+        console.log("📡 [Toriel Sound] تم إرسال إشارة تشغيل الصوت للروم بنجاح.");
     } catch (error) {
-        console.error("❌ [Toriel Sound] فشل تشغيل الصوت:", error);
+        console.error("❌ [Toriel Sound] فشل تشغيل الصوت داخلياً:", error);
     }
 }
 
@@ -84,7 +103,6 @@ async function handleGroqStream(prompt: string, message: any) {
             { role: 'user', content: prompt }
         ];
 
-        // بدء بث الرد (Stream) تماماً مثل إعداداتك
         const stream = await groq.chat.completions.create({
             messages: messages,
             model: 'meta-llama/llama-4-scout-17b-16e-instruct',
@@ -97,24 +115,20 @@ async function handleGroqStream(prompt: string, message: any) {
         let fullResponse = '';
         let lastUpdateTime = Date.now();
         
-        // إرسال رسالة أولية فارغة ليتم التعديل عليها أثناء البث
         const replyMessage = await message.reply("⏳ جاري صياغة الرد...");
 
         for await (const chunk of stream) {
             const content = chunk.choices[0]?.delta?.content || '';
             fullResponse += content;
 
-            // تحديث الرسالة في الديسكورد كل 1.5 ثانية تجنباً للـ Rate Limit (تعليق الديسكورد)
             if (Date.now() - lastUpdateTime > 1500 && fullResponse.trim().length > 0) {
                 await replyMessage.edit(fullResponse + " ▌");
                 lastUpdateTime = Date.now();
             }
         }
 
-        // التحديث النهائي الصافي بعد اكتمال البث
         if (fullResponse.trim().length > 0) {
             await replyMessage.edit(fullResponse);
-            // حفظ الحوار في الذاكرة
             updateChannelHistory(message.channel.id, 'user', prompt);
             updateChannelHistory(message.channel.id, 'assistant', fullResponse);
         } else {
@@ -131,6 +145,7 @@ async function handleGroqStream(prompt: string, message: any) {
 client.on('voiceStateUpdate', (oldState, newState) => {
     if (newState.member?.user.bot) return;
 
+    // حالة دخول عضو جديد للروم الصوتي والبوت متواجد فيه
     if (!oldState.channelId && newState.channelId) {
         if (newState.channel && newState.channel.members.has(client.user!.id)) {
             const connection = joinVoiceChannel({
@@ -143,7 +158,7 @@ client.on('voiceStateUpdate', (oldState, newState) => {
             console.log(`👤 العضو دخل الروم، جاري تشغيل الترحيب...`);
             setTimeout(() => {
                 playGreetingSound(connection);
-            }, 2500);
+            }, 1500);
         }
     }
 });
@@ -168,10 +183,10 @@ client.on('messageCreate', async (message) => {
             });
             setTimeout(() => {
                 playGreetingSound(connection);
-            }, 2000);
+            }, 1500);
             return message.reply("أنا قادمة فوراً إلى القناة الصوتية.");
         } else {
-            return message.reply("عذراً، يجب أن تكون في قناة صوتية أولاً لأتمكن من الانضمام إليك.");
+            return message.reply("عذراً، يجب أن تكون في قناة Arrays صوتية أولاً لأتمكن من الانضمام إليك.");
         }
     }
 
@@ -179,7 +194,6 @@ client.on('messageCreate', async (message) => {
 
     try {
         await message.channel.sendTyping();
-        // استدعاء دالة البث الجديدة المحدثة بموديل llama-4 الجديد
         await handleGroqStream(prompt, message);
     } catch (err) {
         console.error(err);
