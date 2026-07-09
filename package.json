@@ -1,17 +1,20 @@
 {
-  "name": "toriel-bot",
+  "name": "my-discord-botbot",
   "version": "1.0.0",
-  "description": "Elegant lady assistant for Casper",
+  "description": "Toriel Discord Bot powered by Gemini",
   "main": "index.ts",
   "scripts": {
-    "start": "node --import tsx index.ts"
+    "start": "ts-node index.ts",
+    "build": "tsc"
   },
   "dependencies": {
-    "@discordjs/voice": "^0.18.0",
-    "discord.js": "^14.16.3",
-    "ffmpeg-static": "^5.2.0",
-    "libsodium-wrappers": "^0.7.15",
-    "opusscript": "^0.0.8",
-    "tsx": "^4.7.1"
+    "@google/generative-ai": "^0.1.0",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24"
   }
 }
