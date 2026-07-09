@@ -7,7 +7,7 @@ dotenv.config();
 
 // بوابة وهمية لمنع توقف البوت على منصة Render
 http.createServer((req, res) => {
-    res.writeHead(200); res.end("Toriel is Elegant & Ready with Klipy Native GIFs.");
+    res.writeHead(200); res.end("Toriel is Elegant & Ready with Live Klipy Search.");
 }).listen(process.env.PORT || 3000);
 
 const client = new Client({
@@ -36,16 +36,26 @@ function updateChannelHistory(channelId: string, role: 'user' | 'assistant', con
     if (history.length > 9) history.shift();
 }
 
-// روابط أنمي مباشرة وصافية من محرك Klipy الجديد المتوافق مع ديسكورد 100%
-function getKlipyAnimeGif(): string {
-    const gifs = [
-        'https://klipy.com/gifs/osaka-spin-3',
-        'https://klipy.com/gifs/anime-tea-drinking',
-        'https://klipy.com/gifs/anime-wave-hello',
-        'https://klipy.com/gifs/anime-smile-happy',
-        'https://klipy.com/gifs/anime-reading-book'
-    ];
-    return gifs[Math.floor(Math.random() * gifs.length)];
+// دالة البحث التلقائي الحية في مكتبة Klipy الرسمية
+async function searchKlipyGif(searchQuery: string): Promise<string | null> {
+    const KLIPY_API_KEY = process.env.KLIPY_API_KEY;
+    if (!KLIPY_API_KEY) return null;
+
+    try {
+        // استدعاء الـ API الرسمي لـ Klipy للبحث عن أنمي
+        const url = `https://api.klipy.com/v1/gifs/search?q=${encodeURIComponent(searchQuery)}&key=${KLIPY_API_KEY}&limit=5`;
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.data && data.data.length > 0) {
+            const randomIndex = Math.floor(Math.random() * data.data.length);
+            // إرجاع رابط الصفحة المباشر لأن ديسكورد يحوله تلقائياً لـ Native GIF
+            return data.data[randomIndex].url;
+        }
+    } catch (error) {
+        console.error("❌ فشل جلب الـ GIF من مكتبة Klipy:", error);
+    }
+    return null;
 }
 
 // دالة معالجة الـ Streaming والرد باللغة المطابقة
@@ -95,9 +105,9 @@ async function handleGroqStream(prompt: string, message: any) {
         }
 
         if (fullResponse.trim().length > 0) {
-            // ندمج رد اللاما مع رابط الـ Klipy المباشر عشان ديسكورد يفتحه كـ Native GIF فورا
-            const gifUrl = getKlipyAnimeGif();
-            const finalMessage = `${fullResponse}\n${gifUrl}`;
+            // البحث التلقائي عن GIF أنمي مناسب لثيم الغرفة من مكتبة ديسكورد الرسمية عبر Klipy
+            const klipyGif = await searchKlipyGif("anime aesthetic");
+            const finalMessage = klipyGif ? `${fullResponse}\n${klipyGif}` : fullResponse;
 
             await replyMessage.edit({ content: finalMessage });
             
@@ -132,7 +142,7 @@ client.on('messageCreate', async (message) => {
 });
 
 client.once('ready', () => {
-    console.log(`✅ Toriel جاهزة ومحدثة بنظام Klipy الفعلي بحساب: ${client.user?.tag}`);
+    console.log(`✅ Toriel جاهزة ومربوطة بمكتبة Klipy ديسكورد بحساب: ${client.user?.tag}`);
 });
 
 client.login(process.env.DISCORD_TOKEN);
