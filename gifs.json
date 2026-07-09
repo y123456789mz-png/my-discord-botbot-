@@ -1,8 +1,25 @@
-[
-  "https://klipy.com/gifs/osaka-spin-3",
-  "https://klipy.com/gifs/yuki-13",
-  "https://klipy.com/gifs/usada-pekora-6",
-  "https://klipy.com/gifs/oz-oz-yarimasu-3",
-  "https://klipy.com/gifs/anime-apothecary-diaries-33",
-  "https://klipy.com/gifs/zero-two-92"
-]
+{
+  "romantic": [
+    "https://media1.tenor.com/m/a-4467qZq2kAAAAd/anime-tea.gif",
+    "https://media1.tenor.com/m/2e_dM-uQk-kAAAAd/reading-book-anime.gif",
+    "https://media1.tenor.com/m/9tK9VlJzQy0AAAAd/anime-love.gif"
+  ],
+  "angry": [
+    "https://media1.tenor.com/m/1l6G7L7Y9YAAAAAd/osaka-azumanga-daioh.gif",
+    "https://media1.tenor.com/m/h9s1-L7fS6UAAAAd/anime-wave.gif",
+    "https://media1.tenor.com/m/Ka9J5ZQ3d9kAAAAd/anime-angry.gif"
+  ],
+  "happy": [
+    "https://media1.tenor.com/m/Z619x33eD0cAAAAd/anime-smile.gif",
+    "https://media1.tenor.com/m/j-WxKxRXWAIAAAAd/anime-happy.gif",
+    "https://media1.tenor.com/m/6xHqJkYP7bMAAAAd/anime-dance.gif"
+  ],
+  "sad": [
+    "https://media1.tenor.com/m/5Hn5J7VKvNkAAAAd/anime-cry.gif",
+    "https://media1.tenor.com/m/7mK8JHqPmjUAAAAd/anime-sad.gif"
+  ],
+  "default": [
+    "https://media1.tenor.com/m/Z619x33eD0cAAAAd/anime-smile.gif",
+    "https://media1.tenor.com/m/h9s1-L7fS6UAAAAd/anime-wave.gif"
+  ]
+}
