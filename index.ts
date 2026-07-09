@@ -49,7 +49,6 @@ function updateChannelHistory(channelId: string, role: 'user' | 'model', content
 function playGreetingSound(connection: any) {
     try {
         const player = createAudioPlayer();
-        // قراءة الملف من المجلد الرئيسي للمشروع مباشرة لمنع مشكلة المجلدات الفرعية
         const soundPath = join(process.cwd(), 'hey.mp3'); 
         const resource = createAudioResource(soundPath, {
             inputType: StreamType.Arbitrary,
@@ -64,14 +63,14 @@ function playGreetingSound(connection: any) {
     }
 }
 
-// دالة الذكاء الاصطناعي باستخدام Gemini الرسمية والسريعة
+// دالة الذكاء الاصطناعي - تعديل طريقة الاستدلال لـ Gemini
 async function askGemini(prompt: string, channelId: string): Promise<string> {
-    // محاولة قراءة المفتاح بكلا الاسمين لضمان عدم حدوث خطأ "المفتاح مفقود"
-    const GEMINI_KEY = process.env.GEMINI_API_KEY || process.env.GEMINI_KEY;
+    const GEMINI_KEY = process.env.GEMINI_KEY || process.env.GEMINI_API_KEY;
     if (!GEMINI_KEY) return "أوه، يبدو أن مفتاح التشغيل الخاص بي مفقود في إعدادات البيئة.";
 
     try {
-        const ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
+        // التعديل هنا: تمرير المفتاح مباشرة كسلسلة نصية وهو الأضمن للمكتبة
+        const ai = new GoogleGenAI(GEMINI_KEY);
         const model = ai.getGenerativeModel({ 
             model: 'gemini-1.5-flash',
             systemInstruction: `أنتِ Toriel، مساعدة ذكية وأنثوية بطابع ملكي راقٍ جداً، ومستمعة جيدة لكاسبر (Casper).
@@ -81,12 +80,9 @@ async function askGemini(prompt: string, channelId: string): Promise<string> {
         });
 
         const history = getChannelHistory(channelId);
-
-        const chatSession = model.startChat({
-            history: history
-        });
-
+        const chatSession = model.startChat({ history: history });
         const result = await chatSession.sendMessage(prompt);
+        
         return result.response.text();
     } catch (error) {
         console.error("❌ خطأ في الاتصال بـ Gemini:", error);
@@ -122,7 +118,6 @@ client.on('messageCreate', async (message) => {
     const isMentioned = message.mentions.users.has(client.user!.id);
     if (!isMentioned || message.mentions.everyone) return;
 
-    // تنظيف الرسالة من التاق
     const prompt = message.content.replace(new RegExp(`<@!?${client.user!.id}>`, 'g'), '').trim();
 
     // أمر الانضمام للروم الصوتي
@@ -147,11 +142,9 @@ client.on('messageCreate', async (message) => {
     if (!prompt) return;
 
     try {
-        await message.channel.sendTyping(); // إظهار التفاعل (Toriel is typing...)
-        
+        await message.channel.sendTyping();
         const responseText = await askGemini(prompt, message.channel.id);
         
-        // حفظ السوالف في الذاكرة
         updateChannelHistory(message.channel.id, 'user', prompt);
         updateChannelHistory(message.channel.id, 'model', responseText);
 
