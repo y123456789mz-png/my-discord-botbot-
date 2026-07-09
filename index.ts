@@ -1,32 +1,20 @@
 import { Client, GatewayIntentBits } from 'discord.js';
-import { 
-    joinVoiceChannel, 
-    createAudioPlayer, 
-    createAudioResource, 
-    StreamType,
-    AudioPlayerStatus,
-    NoSubscriberBehavior
-} from '@discordjs/voice';
 import http from 'http';
-import { join } from 'path';
 import Groq from 'groq-sdk';
 import dotenv from 'dotenv';
-// استدعاء حزمة التشفير إجبارياً هنا ليفهمها رندر
-import 'libsodium-wrappers'; 
 
 dotenv.config();
 
 // بوابة وهمية لمنع توقف البوت على منصة Render
 http.createServer((req, res) => {
-    res.writeHead(200); res.end("Toriel is Elegant & Ready with Groq Stream.");
+    res.writeHead(200); res.end("Toriel is Elegant & Ready with Bilingual Stream & GIFs.");
 }).listen(process.env.PORT || 3000);
 
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildVoiceStates
+        GatewayIntentBits.MessageContent
     ]
 });
 
@@ -48,40 +36,19 @@ function updateChannelHistory(channelId: string, role: 'user' | 'assistant', con
     if (history.length > 9) history.shift();
 }
 
-// دالة تشغيل صوت الترحيب المعدلة والمضمونة للرندر
-function playGreetingSound(connection: any) {
-    try {
-        // إعداد المشغل مع سلوك عدم وجود مستمعين لمنع التعليق
-        const player = createAudioPlayer({
-            behaviors: {
-                noSubscriber: NoSubscriberBehavior.Play
-            }
-        });
-        
-        const soundPath = join(process.cwd(), 'hey.mp3'); 
-        
-        // تحويل الصوت وتمريره بنظام Arbitrary المدعوم من ffmpeg-static
-        const resource = createAudioResource(soundPath, {
-            inputType: StreamType.Arbitrary,
-            inlineVolume: true
-        });
-
-        resource.volume?.setVolume(0.8); // رفع مستوى الصوت لـ 80%
-
-        player.play(resource);
-        connection.subscribe(player);
-
-        player.on('error', error => {
-            console.error('❌ [Toriel Audio Player Error]:', error.message);
-        });
-
-        console.log("📡 [Toriel Sound] تم إرسال إشارة تشغيل الصوت للروم بنجاح.");
-    } catch (error) {
-        console.error("❌ [Toriel Sound] فشل تشغيل الصوت داخلياً:", error);
-    }
+// دالة جلب رابط GIF عشوائي ولطيف يناسب شخصية Toriel
+function getRandomGif(): string {
+    const gifs = [
+        'https://media.tenor.com/7b58vF_093gAAAAC/toriel-undertale.gif',
+        'https://media.tenor.com/vH_fDsc8y8EAAAAC/undertale-toriel.gif',
+        'https://media.tenor.com/y4WwB4WzLqMAAAAC/anime-smile.gif',
+        'https://media.tenor.com/mYg_Xn9_5gQAAAAC/anime-tea.gif',
+        'https://media.tenor.com/VpT7NidgqL4AAAAC/anime-wave.gif'
+    ];
+    return gifs[Math.floor(Math.random() * gifs.length)];
 }
 
-// دالة معالجة الـ Streaming وإرسال الرد للديسكورد أولاً بأول
+// دالة معالجة الـ Streaming والرد باللغة المطابقة وإرسال الـ GIF
 async function handleGroqStream(prompt: string, message: any) {
     const GROQ_API_KEY = process.env.GROQ_API_KEY;
     if (!GROQ_API_KEY) {
@@ -92,10 +59,11 @@ async function handleGroqStream(prompt: string, message: any) {
         const groq = new Groq({ apiKey: GROQ_API_KEY });
         const history = getChannelHistory(message.channel.id);
 
+        // توجيهات النظام الصارمة للغة والشخصية
         const systemInstruction = `أنتِ Toriel، مساعدة ذكية وأنثوية بطابع ملكي راقٍ جداً، ومستمعة جيدة لكاسبر (Casper).
-- تفهمين العامية العربية بطلاقة لكن تردين بالفصحى الراقية دائماً وبشكل مختصر ومباشر وبدون تكلف أو "كرنج".
-- إذا لم تكوني متأكدة من معلومة، قولي "لا أعلم" بثقة وثقل وبدون اختلاق إجابات.
-- لا تتحدثي بلهجات عامية أبداً، فقط فصحى راقية ومحترمة.`;
+- يجب أن تطابقي لغة المستخدم تماماً (Language Matching): إذا تحدث باللغة العربية، جيبي باللغة العربية الفصحى الراقية. وإذا تحدث باللغة الإنجليزية، جيبي باللغة الإنجليزية (English) بأسلوب ملكي ومهذب.
+- ردودك دائماً مختصرة، مباشرة، وبدون أي "كرنج" أو تكلف.
+- إذا لم تكوني متأكدة من معلومة، قولي "لا أعلم" بثقة وبدون اختلاق إجابات (أو "I do not know" بالإنجليزية).`;
 
         const messages: ChatMessage[] = [
             { role: 'system', content: systemInstruction },
@@ -115,20 +83,28 @@ async function handleGroqStream(prompt: string, message: any) {
         let fullResponse = '';
         let lastUpdateTime = Date.now();
         
-        const replyMessage = await message.reply("⏳ جاري صياغة الرد...");
+        // إرسال رسالة التفكير الأولية
+        const replyMessage = await message.reply("⏳ ...");
 
         for await (const chunk of stream) {
             const content = chunk.choices[0]?.delta?.content || '';
             fullResponse += content;
 
+            // تحديث النص كل 1.5 ثانية تجنباً للمشاكل
             if (Date.now() - lastUpdateTime > 1500 && fullResponse.trim().length > 0) {
                 await replyMessage.edit(fullResponse + " ▌");
                 lastUpdateTime = Date.now();
             }
         }
 
+        // التحديث النهائي للرسالة مع إرفاق الـ GIF في سطر جديد
         if (fullResponse.trim().length > 0) {
-            await replyMessage.edit(fullResponse);
+            const gifUrl = getRandomGif();
+            const finalContent = `${fullResponse}\n\n${gifUrl}`;
+            
+            await replyMessage.edit(finalContent);
+            
+            // حفظ الحوار في الذاكرة
             updateChannelHistory(message.channel.id, 'user', prompt);
             updateChannelHistory(message.channel.id, 'assistant', fullResponse);
         } else {
@@ -141,28 +117,6 @@ async function handleGroqStream(prompt: string, message: any) {
     }
 }
 
-// حدث دخول الأعضاء للـ VC للترحيب الصوتي
-client.on('voiceStateUpdate', (oldState, newState) => {
-    if (newState.member?.user.bot) return;
-
-    // حالة دخول عضو جديد للروم الصوتي والبوت متواجد فيه
-    if (!oldState.channelId && newState.channelId) {
-        if (newState.channel && newState.channel.members.has(client.user!.id)) {
-            const connection = joinVoiceChannel({
-                channelId: newState.channelId,
-                guildId: newState.guild.id,
-                adapterCreator: newState.guild.voiceAdapterCreator,
-                selfDeaf: false,
-                selfMute: false
-            });
-            console.log(`👤 العضو دخل الروم، جاري تشغيل الترحيب...`);
-            setTimeout(() => {
-                playGreetingSound(connection);
-            }, 1500);
-        }
-    }
-});
-
 // استقبال الرسائل والشات
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
@@ -171,25 +125,6 @@ client.on('messageCreate', async (message) => {
     if (!isMentioned || message.mentions.everyone) return;
 
     const prompt = message.content.replace(new RegExp(`<@!?${client.user!.id}>`, 'g'), '').trim();
-
-    if (prompt.toLowerCase() === 'join' || prompt === 'انضمي') {
-        if (message.member?.voice.channel) {
-            const connection = joinVoiceChannel({
-                channelId: message.member.voice.channel.id,
-                guildId: message.guildId!,
-                adapterCreator: message.guild!.voiceAdapterCreator,
-                selfDeaf: false,
-                selfMute: false
-            });
-            setTimeout(() => {
-                playGreetingSound(connection);
-            }, 1500);
-            return message.reply("أنا قادمة فوراً إلى القناة الصوتية.");
-        } else {
-            return message.reply("عذراً، يجب أن تكون في قناة Arrays صوتية أولاً لأتمكن من الانضمام إليك.");
-        }
-    }
-
     if (!prompt) return;
 
     try {
@@ -201,7 +136,7 @@ client.on('messageCreate', async (message) => {
 });
 
 client.once('ready', () => {
-    console.log(`✅ Toriel تعمل الآن بنظام Groq Stream بحساب: ${client.user?.tag}`);
+    console.log(`✅ Toriel المحدثة تعمل الآن وجاهزة باللغتين والـ GIFs بحساب: ${client.user?.tag}`);
 });
 
 client.login(process.env.DISCORD_TOKEN);
