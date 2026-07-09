@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 http.createServer((req, res) => {
-    res.writeHead(200); res.end("Toriel is Elegant & Ready with Native Embed GIFs.");
+    res.writeHead(200); res.end("Toriel is Elegant & Ready with Direct GIF Links.");
 }).listen(process.env.PORT || 3000);
 
 const client = new Client({
@@ -17,13 +17,13 @@ const client = new Client({
     ]
 });
 
-// روابط GIFs أنمي مباشرة ومضمونة 100% من اللي أنت جربتها
+// روابط مباشرة تنتهي بـ .gif عشان ديسكورد يعرضها كصورة متحركة بدون مربعات
 const workingGifs = [
-    'https://klipy.com/gifs/osaka-spin-3',
-    'https://klipy.com/gifs/anime-tea-drinking',
-    'https://klipy.com/gifs/anime-wave-hello',
-    'https://klipy.com/gifs/anime-smile-happy',
-    'https://klipy.com/gifs/anime-reading-book'
+    'https://media1.tenor.com/m/1l6G7L7Y9YAAAAAd/osaka-azumanga-daioh.gif',
+    'https://media1.tenor.com/m/a-4467qZq2kAAAAd/anime-tea.gif',
+    'https://media1.tenor.com/m/h9s1-L7fS6UAAAAd/anime-wave.gif',
+    'https://media1.tenor.com/m/Z619x33eD0cAAAAd/anime-smile.gif',
+    'https://media1.tenor.com/m/2e_dM-uQk-kAAAAd/reading-book-anime.gif'
 ];
 
 async function handleGroqStream(prompt: string, message: any) {
@@ -45,10 +45,10 @@ async function handleGroqStream(prompt: string, message: any) {
             fullResponse += chunk.choices[0]?.delta?.content || '';
         }
 
-        // هنا السحر: نحط النص في الـ Description، والـ GIF في الـ Image (الرابط بيختفي)
+        // استخدام رابط مباشر ينتهي بـ .gif
         const embed = new EmbedBuilder()
             .setDescription(fullResponse || "...")
-            .setImage(workingGifs[Math.floor(Math.random() * workingGifs.length)] + "/raw"); // إضافة /raw عشان يظهر كـ GIF
+            .setImage(workingGifs[Math.floor(Math.random() * workingGifs.length)]);
 
         await replyMessage.edit({ content: "", embeds: [embed] });
     } catch (err) {
