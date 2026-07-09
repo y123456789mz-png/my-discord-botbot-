@@ -7,7 +7,7 @@ dotenv.config();
 
 // بوابة وهمية لمنع توقف البوت على منصة Render
 http.createServer((req, res) => {
-    res.writeHead(200); res.end("Toriel is Elegant & Ready with Native Discord GIFs.");
+    res.writeHead(200); res.end("Toriel is Elegant & Ready with Klipy Native GIFs.");
 }).listen(process.env.PORT || 3000);
 
 const client = new Client({
@@ -36,14 +36,14 @@ function updateChannelHistory(channelId: string, role: 'user' | 'assistant', con
     if (history.length > 9) history.shift();
 }
 
-// قائمة روابط GIFs أنمي رسمية من سيرفرات ديسكورد و Tenor المباشرة الشغالة فوراً
-function getNativeDiscordGif(): string {
+// روابط أنمي مباشرة وصافية من محرك Klipy الجديد المتوافق مع ديسكورد 100%
+function getKlipyAnimeGif(): string {
     const gifs = [
-        'https://tenor.com/view/anime-tea-gif-25112101',
-        'https://tenor.com/view/anime-smile-gif-18115664',
-        'https://tenor.com/view/violet-evergarden-anime-gif-12104391',
-        'https://tenor.com/view/anime-wave-hello-gif-20516422',
-        'https://tenor.com/view/anime-reading-book-gif-24411905'
+        'https://klipy.com/gifs/osaka-spin-3',
+        'https://klipy.com/gifs/anime-tea-drinking',
+        'https://klipy.com/gifs/anime-wave-hello',
+        'https://klipy.com/gifs/anime-smile-happy',
+        'https://klipy.com/gifs/anime-reading-book'
     ];
     return gifs[Math.floor(Math.random() * gifs.length)];
 }
@@ -95,8 +95,8 @@ async function handleGroqStream(prompt: string, message: any) {
         }
 
         if (fullResponse.trim().length > 0) {
-            // ندمج النص مع رابط ديسكورد الرسمي للـ GIF المباشر، ديسكورد بيعرضه كـ Native GIF فورا
-            const gifUrl = getNativeDiscordGif();
+            // ندمج رد اللاما مع رابط الـ Klipy المباشر عشان ديسكورد يفتحه كـ Native GIF فورا
+            const gifUrl = getKlipyAnimeGif();
             const finalMessage = `${fullResponse}\n${gifUrl}`;
 
             await replyMessage.edit({ content: finalMessage });
@@ -132,7 +132,7 @@ client.on('messageCreate', async (message) => {
 });
 
 client.once('ready', () => {
-    console.log(`✅ Toriel جاهزة ومحدثة تماماً بدون مفاتيح خارجية بحساب: ${client.user?.tag}`);
+    console.log(`✅ Toriel جاهزة ومحدثة بنظام Klipy الفعلي بحساب: ${client.user?.tag}`);
 });
 
 client.login(process.env.DISCORD_TOKEN);
