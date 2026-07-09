@@ -4,7 +4,7 @@
   "description": "Toriel Discord Bot powered by Gemini",
   "main": "index.ts",
   "scripts": {
-    "start": "ts-node index.ts",
+    "start": "tsx index.ts",
     "build": "tsc"
   },
   "dependencies": {
@@ -12,6 +12,7 @@
     "discord.js": "^14.14.1",
     "dotenv": "^16.4.5",
     "ts-node": "^10.9.2",
+    "tsx": "^4.7.1",
     "typescript": "^5.3.3"
   },
   "devDependencies": {
