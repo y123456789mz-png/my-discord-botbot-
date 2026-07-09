@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, EmbedBuilder } from 'discord.js';
+import { Client, GatewayIntentBits } from 'discord.js';
 import http from 'http';
 import Groq from 'groq-sdk';
 import dotenv from 'dotenv';
@@ -7,7 +7,7 @@ dotenv.config();
 
 // بوابة وهمية لمنع توقف البوت على منصة Render
 http.createServer((req, res) => {
-    res.writeHead(200); res.end("Toriel is Elegant & Ready with Anime Embed GIFs.");
+    res.writeHead(200); res.end("Toriel is Elegant & Ready with Native Discord GIFs.");
 }).listen(process.env.PORT || 3000);
 
 const client = new Client({
@@ -36,21 +36,19 @@ function updateChannelHistory(channelId: string, role: 'user' | 'assistant', con
     if (history.length > 9) history.shift();
 }
 
-// قائمة GIFs أنمي منوعة ومختارة بعناية لتظهر بشكل مدمج ومباشر
-function getRandomAnimeGif(): string {
-    const animeGifs = [
-        'https://media.tenor.com/866BqYwco7AAAAAC/violet-evergarden.gif',
-        'https://media.tenor.com/l_v1X2dGqV0AAAAC/anime-tea.gif',
-        'https://media.tenor.com/mYg_Xn9_5gQAAAAC/anime-tea.gif',
-        'https://media.tenor.com/2m66nInN20YAAAAC/anime-smile.gif',
-        'https://media.tenor.com/9v6_R1I9E6AAAAAC/anime-faint.gif',
-        'https://media.tenor.com/VpT7NidgqL4AAAAC/anime-wave.gif',
-        'https://media.tenor.com/wVp5UepGv8gAAAAC/anime-reading.gif'
+// روابط GIFs أنمي مباشرة وصافية متوافقة مع ديسكورد 100% لتظهر كـ GIF مدمج من المنصة
+function getRandomDiscordGif(): string {
+    const gifs = [
+        'https://images.squarespace-cdn.com/content/v1/5fe4cae33ca0736029fe2b2c/1612866946637-I84F9CCVCH6KFAJ2Q73L/anime-tea.gif',
+        'https://i.getgify.com/39V.gif',
+        'https://i.getgify.com/134Kfzd7fUf2ve.gif',
+        'https://i.getgify.com/d9Xnks8vUis7K.gif',
+        'https://i.getgify.com/11HeublhIqClY4.gif'
     ];
-    return animeGifs[Math.floor(Math.random() * animeGifs.length)];
+    return gifs[Math.floor(Math.random() * gifs.length)];
 }
 
-// دالة معالجة الـ Streaming والرد باللغة المطابقة وإرسال الـ Embed
+// دالة معالجة الـ Streaming والرد باللغة المطابقة
 async function handleGroqStream(prompt: string, message: any) {
     const GROQ_API_KEY = process.env.GROQ_API_KEY;
     if (!GROQ_API_KEY) {
@@ -97,12 +95,12 @@ async function handleGroqStream(prompt: string, message: any) {
         }
 
         if (fullResponse.trim().length > 0) {
-            // إنشاء الـ Embed عشان يظهر الـ GIF بشكل فخم ومباشر داخل الديسكورد
-            const embed = new EmbedBuilder()
-                .setImage(getRandomAnimeGif())
-                .setColor('#ecd9c6'); // لون بيج راقي يناسب الثيم
+            // هنا ندمج النص مع رابط الـ GIF المباشر في رسالة واحدة بعد اكتمال البث
+            // الديسكورد تلقائياً بيقرأ الرابط ويفتحه كـ GIF طبيعي من الديسكورد نفسه
+            const gifUrl = getRandomDiscordGif();
+            const finalMessage = `${fullResponse}\n${gifUrl}`;
 
-            await replyMessage.edit({ content: fullResponse, embeds: [embed] });
+            await replyMessage.edit({ content: finalMessage });
             
             updateChannelHistory(message.channel.id, 'user', prompt);
             updateChannelHistory(message.channel.id, 'assistant', fullResponse);
@@ -135,7 +133,7 @@ client.on('messageCreate', async (message) => {
 });
 
 client.once('ready', () => {
-    console.log(`✅ Toriel جاهزة ومحدثة بنظام الأنمي الـ Embed بحساب: ${client.user?.tag}`);
+    console.log(`✅ Toriel جاهزة ومحدثة بنظام الـ GIFs المدمج بحساب: ${client.user?.tag}`);
 });
 
 client.login(process.env.DISCORD_TOKEN);
