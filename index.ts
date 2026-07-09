@@ -2,25 +2,40 @@ import { Client, GatewayIntentBits, Message } from 'discord.js';
 import { GoogleGenAI } from '@google/generative-ai';
 import * as dotenv from 'dotenv';
 import http from 'http';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
-// لإستخدام __dirname في ES Modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
+// تحميل المتغيرات
 dotenv.config();
 
-// ================ سيرفر الوهمي لـ Render ================
-http.createServer((req, res) => {
-    res.writeHead(200);
-    res.end("Toriel is Stable 🐐");
-}).listen(process.env.PORT || 3000);
+// ================ سيرفر HTTP مطلوب لـ Render ================
+const server = http.createServer((req, res) => {
+    if (req.url === '/') {
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(`
+            <!DOCTYPE html>
+            <html>
+            <head><title>Toriel Bot</title></head>
+            <body style="background: #1a1a2e; color: #fff; font-family: Arial; text-align: center; padding: 50px;">
+                <h1>🐐 Toriel is Running!</h1>
+                <p>Status: <span style="color: #4CAF50;">● Online</span></p>
+                <p>Uptime: ${process.uptime().toFixed(0)} seconds</p>
+                <small>Discord Bot by Casper</small>
+            </body>
+            </html>
+        `);
+    } else {
+        res.writeHead(404);
+        res.end('404 Not Found');
+    }
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`✅ HTTP Server running on port ${PORT}`);
+});
 
 // ================ التحقق من المتغيرات ================
 if (!process.env.DISCORD_TOKEN || !process.env.GEMINI_API_KEY) {
-    console.error('❌ خطأ: تأكد من إضافة DISCORD_TOKEN و GEMINI_API_KEY في ملف .env');
+    console.error('❌ خطأ: تأكد من إضافة DISCORD_TOKEN و GEMINI_API_KEY في متغيرات البيئة');
     process.exit(1);
 }
 
@@ -40,39 +55,45 @@ const GIF_CATEGORIES = {
         'https://media1.tenor.com/m/a-4467qZq2kAAAAd/anime-tea.gif',
         'https://media1.tenor.com/m/2e_dM-uQk-kAAAAd/reading-book-anime.gif',
         'https://media1.tenor.com/m/9tK9VlJzQy0AAAAd/anime-love.gif',
-        'https://media1.tenor.com/m/x8v1vLgHrP0AAAAd/anime-cute.gif'
+        'https://media1.tenor.com/m/x8v1vLgHrP0AAAAd/anime-cute.gif',
+        'https://media1.tenor.com/m/4XqNvJkMHcYAAAAd/anime-blush.gif'
     ],
     angry: [
         'https://media1.tenor.com/m/1l6G7L7Y9YAAAAAd/osaka-azumanga-daioh.gif',
         'https://media1.tenor.com/m/h9s1-L7fS6UAAAAd/anime-wave.gif',
-        'https://media1.tenor.com/m/Ka9J5ZQ3d9kAAAAd/anime-angry.gif'
+        'https://media1.tenor.com/m/Ka9J5ZQ3d9kAAAAd/anime-angry.gif',
+        'https://media1.tenor.com/m/7qL2JkP8XYoAAAAd/anime-punch.gif'
     ],
     happy: [
         'https://media1.tenor.com/m/Z619x33eD0cAAAAd/anime-smile.gif',
-        'https://media1.tenor.com/m/2e_dM-uQk-kAAAAd/reading-book-anime.gif',
-        'https://media1.tenor.com/m/j-WxKxRXWAIAAAAd/anime-happy.gif'
+        'https://media1.tenor.com/m/j-WxKxRXWAIAAAAd/anime-happy.gif',
+        'https://media1.tenor.com/m/6xHqJkYP7bMAAAAd/anime-dance.gif',
+        'https://media1.tenor.com/m/2e_dM-uQk-kAAAAd/reading-book-anime.gif'
     ],
     sad: [
         'https://media1.tenor.com/m/5Hn5J7VKvNkAAAAd/anime-cry.gif',
-        'https://media1.tenor.com/m/7mK8JHqPmjUAAAAd/anime-sad.gif'
+        'https://media1.tenor.com/m/7mK8JHqPmjUAAAAd/anime-sad.gif',
+        'https://media1.tenor.com/m/9pLqJkQ7HmIAAAAd/anime-depressed.gif'
     ],
     confused: [
         'https://media1.tenor.com/m/9mKvL7PJqH0AAAAd/anime-confused.gif',
-        'https://media1.tenor.com/m/8jVKv7JPMjIAAAAd/anime-thinking.gif'
+        'https://media1.tenor.com/m/8jVKv7JPMjIAAAAd/anime-thinking.gif',
+        'https://media1.tenor.com/m/4rXqNvJkMHcYAAAAd/anime-question.gif'
     ],
     default: [
         'https://media1.tenor.com/m/Z619x33eD0cAAAAd/anime-smile.gif',
-        'https://media1.tenor.com/m/h9s1-L7fS6UAAAAd/anime-wave.gif'
+        'https://media1.tenor.com/m/h9s1-L7fS6UAAAAd/anime-wave.gif',
+        'https://media1.tenor.com/m/a-4467qZq2kAAAAd/anime-tea.gif'
     ]
 };
 
-// كلمات مفتاحية للتصنيف السريع (حالة الطوارئ)
+// كلمات مفتاحية للتصنيف السريع
 const KEYWORD_MAP = {
-    romantic: ['حب', 'عشق', 'غرام', 'قلب', 'رومنسي', 'حبيبي', 'حبيبتي', 'كشخة', 'شوق'],
-    angry: ['غضب', 'زعل', 'معصب', 'غيظ', 'نرفز', 'حرق', 'كتمة', 'انفجر'],
-    happy: ['فرح', 'سعيد', 'ضحك', 'مبسوط', 'مرتاح', 'حلو', 'جميل', 'يا هلا'],
-    sad: ['حزين', 'بكي', 'زعلان', 'مكتئب', 'تعيس', 'مقهور'],
-    confused: ['محتار', 'حيران', 'وش ذا', 'مدري', 'مافهمت', 'غريب']
+    romantic: ['حب', 'عشق', 'غرام', 'قلب', 'رومنسي', 'حبيبي', 'حبيبتي', 'كشخة', 'شوق', 'عيون', 'روح'],
+    angry: ['غضب', 'زعل', 'معصب', 'غيظ', 'نرفز', 'حرق', 'كتمة', 'انفجر', 'مزعج', 'يغبن'],
+    happy: ['فرح', 'سعيد', 'ضحك', 'مبسوط', 'مرتاح', 'حلو', 'جميل', 'يا هلا', 'هلا', 'تمام'],
+    sad: ['حزين', 'بكي', 'زعلان', 'مكتئب', 'تعيس', 'مقهور', 'ضيق', 'هم'],
+    confused: ['محتار', 'حيران', 'وش ذا', 'مدري', 'مافهمت', 'غريب', 'عجيب', 'استغرب']
 };
 
 // ================ دالة اختيار GIF الذكية ================
@@ -107,7 +128,7 @@ const model = ai.getGenerativeModel({
 
 شروط صارمة جداً:
 1. تحدثي بلهجة سعودية خفيفة ورايقة (أو فصحى مبسطة إذا لزم الأمر).
-2. ممنوع الكرنج أو الردود الطفولية السخيفة.
+2. ممنوع الكرنج أو الردود الطفولية السخيفة تماماً.
 3. إذا سألك أحد عن معلومة ولا تعرفينها، قولي صراحة "ما أعرف" أو "علمي علمك" ولا تخترعين إجابات.
 4. ردودك تكون مختصرة ومباشرة (ماكس 3-4 جمل).
 5. في نهاية كل رد، ضعي كلمة مفتاحية بين قوسين { } لتحدد المشاعر: 
@@ -121,8 +142,10 @@ const model = ai.getGenerativeModel({
 
 // ================ حدث تشغيل البوت ================
 client.once('ready', () => {
-    console.log(`✅ تم تشغيل البوت بنجاح! باسم: ${client.user?.tag}`);
+    console.log(`✅ تم تشغيل البوت بنجاح!`);
+    console.log(`📌 اسم البوت: ${client.user?.tag}`);
     console.log(`📊 عدد السيرفرات: ${client.guilds.cache.size}`);
+    console.log(`🔗 Invite Link: https://discord.com/api/oauth2/authorize?client_id=${client.user?.id}&permissions=8&scope=bot`);
 });
 
 // ================ حدث الرسائل ================
@@ -140,7 +163,7 @@ client.on('messageCreate', async (message: Message) => {
         // إذا مافيه نص
         if (!cleanPrompt) {
             const gif = getSmartGif('مرحباً');
-            await message.reply(`هلا بك كاسبر 🌸 مناديني تبي شيء؟\n${gif}`);
+            await message.reply(`هلا بك 🌸 مناديني تبي شيء؟\n${gif}`);
             return;
         }
 
@@ -177,7 +200,16 @@ client.on('messageCreate', async (message: Message) => {
     }
 });
 
-// ================ تشغيل البوت ================
+// ================ تسجيل الدخول ================
 client.login(process.env.DISCORD_TOKEN).catch(error => {
     console.error('❌ فشل تسجيل الدخول:', error);
+    process.exit(1);
+});
+
+// ================ معالجة إيقاف البوت ================
+process.on('SIGINT', () => {
+    console.log('🛑 جاري إيقاف البوت...');
+    client.destroy();
+    server.close();
+    process.exit(0);
 });
