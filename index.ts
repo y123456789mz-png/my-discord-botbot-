@@ -3,19 +3,18 @@ import {
     joinVoiceChannel, 
     createAudioPlayer, 
     createAudioResource, 
-    StreamType,
-    AudioPlayerStatus
+    StreamType
 } from '@discordjs/voice';
 import http from 'http';
 import { join } from 'path';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import Groq from 'groq-sdk';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 // بوابة وهمية لمنع توقف البوت على منصة Render
 http.createServer((req, res) => {
-    res.writeHead(200); res.end("Toriel is Elegant & Ready.");
+    res.writeHead(200); res.end("Toriel is Elegant & Ready with Groq Stream.");
 }).listen(process.env.PORT || 3000);
 
 const client = new Client({
@@ -27,25 +26,25 @@ const client = new Client({
     ]
 });
 
-// إعداد ذاكرة القناة (تتذكر آخر 9 رسائل)
-interface MessageHistory {
-    role: 'user' | 'model';
-    parts: [{ text: string }];
+// إعداد ذاكرة القناة لحفظ آخر 9 رسائل
+interface ChatMessage {
+    role: 'user' | 'assistant' | 'system';
+    content: string;
 }
-const memoryStore: Record<string, MessageHistory[]> = {};
+const memoryStore: Record<string, ChatMessage[]> = {};
 
-function getChannelHistory(channelId: string): MessageHistory[] {
+function getChannelHistory(channelId: string): ChatMessage[] {
     if (!memoryStore[channelId]) memoryStore[channelId] = [];
     return memoryStore[channelId];
 }
 
-function updateChannelHistory(channelId: string, role: 'user' | 'model', content: string) {
+function updateChannelHistory(channelId: string, role: 'user' | 'assistant', content: string) {
     const history = getChannelHistory(channelId);
-    history.push({ role, parts: [{ text: content }] });
+    history.push({ role, content });
     if (history.length > 9) history.shift();
 }
 
-// دالة تشغيل صوت الترحيب في الـ VC من المجلد الرئيسي للمشروع
+// دالة تشغيل صوت الترحيب في الـ VC
 function playGreetingSound(connection: any) {
     try {
         const player = createAudioPlayer();
@@ -63,29 +62,68 @@ function playGreetingSound(connection: any) {
     }
 }
 
-// دالة الذكاء الاصطناعي باستخدام Gemini الرسمية
-async function askGemini(prompt: string, channelId: string): Promise<string> {
-    const GEMINI_KEY = process.env.GEMINI_KEY || process.env.GEMINI_API_KEY;
-    if (!GEMINI_KEY) return "أوه، يبدو أن مفتاح التشغيل الخاص بي مفقود في إعدادات البيئة.";
+// دالة معالجة الـ Streaming وإرسال الرد للديسكورد أولاً بأول
+async function handleGroqStream(prompt: string, message: any) {
+    const GROQ_API_KEY = process.env.GROQ_API_KEY;
+    if (!GROQ_API_KEY) {
+        return message.reply("أوه، يبدو أن مفتاح تشغيل Groq مفقود في إعدادات البيئة.");
+    }
 
     try {
-        const ai = new GoogleGenerativeAI(GEMINI_KEY);
-        const model = ai.getGenerativeModel({ 
-            model: 'gemini-1.5-flash',
-            systemInstruction: `أنتِ Toriel، مساعدة ذكية وأنثوية بطابع ملكي راقٍ جداً، ومستمعة جيدة لكاسبر (Casper).
+        const groq = new Groq({ apiKey: GROQ_API_KEY });
+        const history = getChannelHistory(message.channel.id);
+
+        const systemInstruction = `أنتِ Toriel، مساعدة ذكية وأنثوية بطابع ملكي راقٍ جداً، ومستمعة جيدة لكاسبر (Casper).
 - تفهمين العامية العربية بطلاقة لكن تردين بالفصحى الراقية دائماً وبشكل مختصر ومباشر وبدون تكلف أو "كرنج".
 - إذا لم تكوني متأكدة من معلومة، قولي "لا أعلم" بثقة وثقل وبدون اختلاق إجابات.
-- لا تتحدثي بلهجات عامية أبداً، فقط فصحى راقية ومحترمة.`
+- لا تتحدثي بلهجات عامية أبداً، فقط فصحى راقية ومحترمة.`;
+
+        const messages: ChatMessage[] = [
+            { role: 'system', content: systemInstruction },
+            ...history,
+            { role: 'user', content: prompt }
+        ];
+
+        // بدء بث الرد (Stream) تماماً مثل إعداداتك
+        const stream = await groq.chat.completions.create({
+            messages: messages,
+            model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+            temperature: 1,
+            max_completion_tokens: 1024,
+            top_p: 1,
+            stream: true,
         });
 
-        const history = getChannelHistory(channelId);
-        const chatSession = model.startChat({ history: history });
-        const result = await chatSession.sendMessage(prompt);
+        let fullResponse = '';
+        let lastUpdateTime = Date.now();
         
-        return result.response.text();
+        // إرسال رسالة أولية فارغة ليتم التعديل عليها أثناء البث
+        const replyMessage = await message.reply("⏳ جاري صياغة الرد...");
+
+        for await (const chunk of stream) {
+            const content = chunk.choices[0]?.delta?.content || '';
+            fullResponse += content;
+
+            // تحديث الرسالة في الديسكورد كل 1.5 ثانية تجنباً للـ Rate Limit (تعليق الديسكورد)
+            if (Date.now() - lastUpdateTime > 1500 && fullResponse.trim().length > 0) {
+                await replyMessage.edit(fullResponse + " ▌");
+                lastUpdateTime = Date.now();
+            }
+        }
+
+        // التحديث النهائي الصافي بعد اكتمال البث
+        if (fullResponse.trim().length > 0) {
+            await replyMessage.edit(fullResponse);
+            // حفظ الحوار في الذاكرة
+            updateChannelHistory(message.channel.id, 'user', prompt);
+            updateChannelHistory(message.channel.id, 'assistant', fullResponse);
+        } else {
+            await replyMessage.edit("لم أستطع صياغة رد مناسب حالياً.");
+        }
+
     } catch (error) {
-        console.error("❌ خطأ في الاتصال بـ Gemini:", error);
-        return "معذرة، واجهتُ صعوبة في معالجة طلبك حالياً.";
+        console.error("❌ خطأ في بث Groq:", error);
+        await message.reply("معذرة، واجهتُ صعوبة في معالجة طلبك عبر نظام البث الحالي.");
     }
 }
 
@@ -119,7 +157,6 @@ client.on('messageCreate', async (message) => {
 
     const prompt = message.content.replace(new RegExp(`<@!?${client.user!.id}>`, 'g'), '').trim();
 
-    // أمر الانضمام للروم الصوتي
     if (prompt.toLowerCase() === 'join' || prompt === 'انضمي') {
         if (message.member?.voice.channel) {
             const connection = joinVoiceChannel({
@@ -142,19 +179,15 @@ client.on('messageCreate', async (message) => {
 
     try {
         await message.channel.sendTyping();
-        const responseText = await askGemini(prompt, message.channel.id);
-        
-        updateChannelHistory(message.channel.id, 'user', prompt);
-        updateChannelHistory(message.channel.id, 'model', responseText);
-
-        await message.reply(responseText);
+        // استدعاء دالة البث الجديدة المحدثة بموديل llama-4 الجديد
+        await handleGroqStream(prompt, message);
     } catch (err) {
         console.error(err);
     }
 });
 
 client.once('ready', () => {
-    console.log(`✅ Toriel المحدثة تعمل الآن بحساب: ${client.user?.tag}`);
+    console.log(`✅ Toriel تعمل الآن بنظام Groq Stream بحساب: ${client.user?.tag}`);
 });
 
 client.login(process.env.DISCORD_TOKEN);
