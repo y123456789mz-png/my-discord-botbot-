@@ -1,12 +1,11 @@
 {
   "name": "toriel-bot",
   "version": "2.0.0",
-  "description": "Toriel bot with smart GIF responses",
+  "description": "Toriel bot for Discord with smart GIF responses",
   "type": "module",
   "main": "index.ts",
   "scripts": {
-    "start": "node --import tsx index.ts",
-    "dev": "node --import tsx --watch index.ts"
+    "start": "node --import tsx index.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.2.1",
