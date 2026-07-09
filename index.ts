@@ -8,7 +8,7 @@ import {
 } from '@discordjs/voice';
 import http from 'http';
 import { join } from 'path';
-import { GoogleGenAI } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -63,14 +63,14 @@ function playGreetingSound(connection: any) {
     }
 }
 
-// دالة الذكاء الاصطناعي باستخدام Gemini الرسمية
+// دالة الذكاء الاصطناعي باستخدام الـ Constructor الصحيح للمكتبة الرسمية
 async function askGemini(prompt: string, channelId: string): Promise<string> {
     const GEMINI_KEY = process.env.GEMINI_KEY || process.env.GEMINI_API_KEY;
     if (!GEMINI_KEY) return "أوه، يبدو أن مفتاح التشغيل الخاص بي مفقود في إعدادات البيئة.";
 
     try {
-        // الاستدعاء الصحيح والمطابق للمكتبة تمرير كائن يحتوي على apiKey
-        const ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
+        // هنا التصليح: استخدام GoogleGenerativeAI بدلاً من المسمى القديم المخطئ
+        const ai = new GoogleGenerativeAI(GEMINI_KEY);
         const model = ai.getGenerativeModel({ 
             model: 'gemini-1.5-flash',
             systemInstruction: `أنتِ Toriel، مساعدة ذكية وأنثوية بطابع ملكي راقٍ جداً، ومستمعة جيدة لكاسبر (Casper).
