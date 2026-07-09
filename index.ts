@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits } from 'discord.js';
+import { Client, GatewayIntentBits, EmbedBuilder } from 'discord.js';
 import http from 'http';
 import Groq from 'groq-sdk';
 import dotenv from 'dotenv';
@@ -7,7 +7,7 @@ dotenv.config();
 
 // بوابة وهمية لمنع توقف البوت على منصة Render
 http.createServer((req, res) => {
-    res.writeHead(200); res.end("Toriel is Elegant & Ready with Bilingual Stream & GIFs.");
+    res.writeHead(200); res.end("Toriel is Elegant & Ready with Anime Embed GIFs.");
 }).listen(process.env.PORT || 3000);
 
 const client = new Client({
@@ -36,19 +36,21 @@ function updateChannelHistory(channelId: string, role: 'user' | 'assistant', con
     if (history.length > 9) history.shift();
 }
 
-// دالة جلب رابط GIF عشوائي ولطيف يناسب شخصية Toriel
-function getRandomGif(): string {
-    const gifs = [
-        'https://media.tenor.com/7b58vF_093gAAAAC/toriel-undertale.gif',
-        'https://media.tenor.com/vH_fDsc8y8EAAAAC/undertale-toriel.gif',
-        'https://media.tenor.com/y4WwB4WzLqMAAAAC/anime-smile.gif',
+// قائمة GIFs أنمي منوعة ومختارة بعناية لتظهر بشكل مدمج ومباشر
+function getRandomAnimeGif(): string {
+    const animeGifs = [
+        'https://media.tenor.com/866BqYwco7AAAAAC/violet-evergarden.gif',
+        'https://media.tenor.com/l_v1X2dGqV0AAAAC/anime-tea.gif',
         'https://media.tenor.com/mYg_Xn9_5gQAAAAC/anime-tea.gif',
-        'https://media.tenor.com/VpT7NidgqL4AAAAC/anime-wave.gif'
+        'https://media.tenor.com/2m66nInN20YAAAAC/anime-smile.gif',
+        'https://media.tenor.com/9v6_R1I9E6AAAAAC/anime-faint.gif',
+        'https://media.tenor.com/VpT7NidgqL4AAAAC/anime-wave.gif',
+        'https://media.tenor.com/wVp5UepGv8gAAAAC/anime-reading.gif'
     ];
-    return gifs[Math.floor(Math.random() * gifs.length)];
+    return animeGifs[Math.floor(Math.random() * animeGifs.length)];
 }
 
-// دالة معالجة الـ Streaming والرد باللغة المطابقة وإرسال الـ GIF
+// دالة معالجة الـ Streaming والرد باللغة المطابقة وإرسال الـ Embed
 async function handleGroqStream(prompt: string, message: any) {
     const GROQ_API_KEY = process.env.GROQ_API_KEY;
     if (!GROQ_API_KEY) {
@@ -59,11 +61,10 @@ async function handleGroqStream(prompt: string, message: any) {
         const groq = new Groq({ apiKey: GROQ_API_KEY });
         const history = getChannelHistory(message.channel.id);
 
-        // توجيهات النظام الصارمة للغة والشخصية
         const systemInstruction = `أنتِ Toriel، مساعدة ذكية وأنثوية بطابع ملكي راقٍ جداً، ومستمعة جيدة لكاسبر (Casper).
-- يجب أن تطابقي لغة المستخدم تماماً (Language Matching): إذا تحدث باللغة العربية، جيبي باللغة العربية الفصحى الراقية. وإذا تحدث باللغة الإنجليزية، جيبي باللغة الإنجليزية (English) بأسلوب ملكي ومهذب.
+- يجب أن تطابقي لغة المستخدم تماماً: إذا تحدث باللغة العربية، جيبي باللغة العربية الفصحى الراقية. وإذا تحدث باللغة الإنجليزية، جيبي باللغة الإنجليزية بأسلوب ملكي ومهذب.
 - ردودك دائماً مختصرة، مباشرة، وبدون أي "كرنج" أو تكلف.
-- إذا لم تكوني متأكدة من معلومة، قولي "لا أعلم" بثقة وبدون اختلاق إجابات (أو "I do not know" بالإنجليزية).`;
+- إذا لم تكوني متأكدة من معلومة، قولي "لا أعلم" بثقة وبدون اختلاق إجابات.`;
 
         const messages: ChatMessage[] = [
             { role: 'system', content: systemInstruction },
@@ -83,32 +84,30 @@ async function handleGroqStream(prompt: string, message: any) {
         let fullResponse = '';
         let lastUpdateTime = Date.now();
         
-        // إرسال رسالة التفكير الأولية
         const replyMessage = await message.reply("⏳ ...");
 
         for await (const chunk of stream) {
             const content = chunk.choices[0]?.delta?.content || '';
             fullResponse += content;
 
-            // تحديث النص كل 1.5 ثانية تجنباً للمشاكل
             if (Date.now() - lastUpdateTime > 1500 && fullResponse.trim().length > 0) {
-                await replyMessage.edit(fullResponse + " ▌");
+                await replyMessage.edit({ content: fullResponse + " ▌" });
                 lastUpdateTime = Date.now();
             }
         }
 
-        // التحديث النهائي للرسالة مع إرفاق الـ GIF في سطر جديد
         if (fullResponse.trim().length > 0) {
-            const gifUrl = getRandomGif();
-            const finalContent = `${fullResponse}\n\n${gifUrl}`;
+            // إنشاء الـ Embed عشان يظهر الـ GIF بشكل فخم ومباشر داخل الديسكورد
+            const embed = new EmbedBuilder()
+                .setImage(getRandomAnimeGif())
+                .setColor('#ecd9c6'); // لون بيج راقي يناسب الثيم
+
+            await replyMessage.edit({ content: fullResponse, embeds: [embed] });
             
-            await replyMessage.edit(finalContent);
-            
-            // حفظ الحوار في الذاكرة
             updateChannelHistory(message.channel.id, 'user', prompt);
             updateChannelHistory(message.channel.id, 'assistant', fullResponse);
         } else {
-            await replyMessage.edit("لم أستطع صياغة رد مناسب حالياً.");
+            await replyMessage.edit({ content: "لم أستطع صياغة رد مناسب حالياً." });
         }
 
     } catch (error) {
@@ -136,7 +135,7 @@ client.on('messageCreate', async (message) => {
 });
 
 client.once('ready', () => {
-    console.log(`✅ Toriel المحدثة تعمل الآن وجاهزة باللغتين والـ GIFs بحساب: ${client.user?.tag}`);
+    console.log(`✅ Toriel جاهزة ومحدثة بنظام الأنمي الـ Embed بحساب: ${client.user?.tag}`);
 });
 
 client.login(process.env.DISCORD_TOKEN);
