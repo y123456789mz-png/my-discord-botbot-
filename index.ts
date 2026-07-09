@@ -5,9 +5,8 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// بوابة وهمية لمنع توقف البوت على منصة Render
 http.createServer((req, res) => {
-    res.writeHead(200); res.end("Toriel is Elegant & Ready with Live Klipy Search.");
+    res.writeHead(200); res.end("Toriel is Elegant & Ready with Fixed Klipy Search.");
 }).listen(process.env.PORT || 3000);
 
 const client = new Client({
@@ -18,7 +17,6 @@ const client = new Client({
     ]
 });
 
-// إعداد ذاكرة القناة لحفظ آخر 9 رسائل
 interface ChatMessage {
     role: 'user' | 'assistant' | 'system';
     content: string;
@@ -36,29 +34,34 @@ function updateChannelHistory(channelId: string, role: 'user' | 'assistant', con
     if (history.length > 9) history.shift();
 }
 
-// دالة البحث التلقائي الحية في مكتبة Klipy الرسمية
-async function searchKlipyGif(searchQuery: string): Promise<string | null> {
+// لستة روابط احتياطية مضمونة 100% لو الـ API سحب علينا
+const fallbackGifs = [
+    'https://klipy.com/gifs/osaka-spin-3',
+    'https://klipy.com/gifs/anime-tea-drinking',
+    'https://klipy.com/gifs/anime-wave-hello',
+    'https://klipy.com/gifs/anime-smile-happy'
+];
+
+async function searchKlipyGif(searchQuery: string): Promise<string> {
     const KLIPY_API_KEY = process.env.KLIPY_API_KEY;
-    if (!KLIPY_API_KEY) return null;
+    if (!KLIPY_API_KEY) return fallbackGifs[Math.floor(Math.random() * fallbackGifs.length)];
 
     try {
-        // استدعاء الـ API الرسمي لـ Klipy للبحث عن أنمي
         const url = `https://api.klipy.com/v1/gifs/search?q=${encodeURIComponent(searchQuery)}&key=${KLIPY_API_KEY}&limit=5`;
         const response = await fetch(url);
         const data = await response.json();
         
         if (data.data && data.data.length > 0) {
             const randomIndex = Math.floor(Math.random() * data.data.length);
-            // إرجاع رابط الصفحة المباشر لأن ديسكورد يحوله تلقائياً لـ Native GIF
             return data.data[randomIndex].url;
         }
     } catch (error) {
         console.error("❌ فشل جلب الـ GIF من مكتبة Klipy:", error);
     }
-    return null;
+    // إذا ما لقى شي يرجع واحد عشوائي من المضمونين
+    return fallbackGifs[Math.floor(Math.random() * fallbackGifs.length)];
 }
 
-// دالة معالجة الـ Streaming والرد باللغة المطابقة
 async function handleGroqStream(prompt: string, message: any) {
     const GROQ_API_KEY = process.env.GROQ_API_KEY;
     if (!GROQ_API_KEY) {
@@ -105,9 +108,9 @@ async function handleGroqStream(prompt: string, message: any) {
         }
 
         if (fullResponse.trim().length > 0) {
-            // البحث التلقائي عن GIF أنمي مناسب لثيم الغرفة من مكتبة ديسكورد الرسمية عبر Klipy
-            const klipyGif = await searchKlipyGif("anime aesthetic");
-            const finalMessage = klipyGif ? `${fullResponse}\n${klipyGif}` : fullResponse;
+            // كلمات بحث أدق وأضمن للأنمي عشان الـ API يلقاها
+            const klipyGif = await searchKlipyGif("anime cute"); 
+            const finalMessage = `${fullResponse}\n${klipyGif}`;
 
             await replyMessage.edit({ content: finalMessage });
             
@@ -123,7 +126,6 @@ async function handleGroqStream(prompt: string, message: any) {
     }
 }
 
-// استقبال الرسائل والشات
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
@@ -142,7 +144,7 @@ client.on('messageCreate', async (message) => {
 });
 
 client.once('ready', () => {
-    console.log(`✅ Toriel جاهزة ومربوطة بمكتبة Klipy ديسكورد بحساب: ${client.user?.tag}`);
+    console.log(`✅ Toriel جاهزة ومحدثة بنظام الفالباك بحساب: ${client.user?.tag}`);
 });
 
 client.login(process.env.DISCORD_TOKEN);
