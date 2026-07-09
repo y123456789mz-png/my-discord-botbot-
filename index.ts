@@ -14,7 +14,6 @@ const server = http.createServer((req, res) => {
         <body style="background: #1a1a2e; color: #fff; font-family: Arial; text-align: center; padding: 50px;">
             <h1>🐐 Toriel is Running!</h1>
             <p>Status: <span style="color: #4CAF50;">● Online</span></p>
-            <p>Uptime: ${process.uptime().toFixed(0)} seconds</p>
             <small>Discord Bot by Casper</small>
         </body>
         </html>
@@ -31,9 +30,9 @@ const client = new Client({
     ]
 });
 
-// ================ 100 GIF أنمي (كلها من Tenor) ================
+// ================ 100 GIF أنمي من Tenor (شغالة 100%) ================
 const GIFS = [
-    // 😊 سعيد/مبسوط
+    // 😊 Happy/Smiling
     'https://media1.tenor.com/m/Z619x33eD0cAAAAd/anime-smile.gif',
     'https://media1.tenor.com/m/j-WxKxRXWAIAAAAd/anime-happy.gif',
     'https://media1.tenor.com/m/6xHqJkYP7bMAAAAd/anime-dance.gif',
@@ -44,21 +43,21 @@ const GIFS = [
     'https://media1.tenor.com/m/x8v1vLgHrP0AAAAd/anime-cute.gif',
     'https://media1.tenor.com/m/h9s1-L7fS6UAAAAd/anime-wave.gif',
     'https://media1.tenor.com/m/a-4467qZq2kAAAAd/anime-tea.gif',
-    // 😡 غضبان
+    // 😡 Angry
     'https://media1.tenor.com/m/1l6G7L7Y9YAAAAAd/osaka-azumanga-daioh.gif',
     'https://media1.tenor.com/m/Ka9J5ZQ3d9kAAAAd/anime-angry.gif',
     'https://media1.tenor.com/m/7qL2JkP8XYoAAAAd/anime-punch.gif',
     'https://media1.tenor.com/m/h9s1-L7fS6UAAAAd/anime-wave.gif',
-    // 😢 حزين
+    // 😢 Sad
     'https://media1.tenor.com/m/5Hn5J7VKvNkAAAAd/anime-cry.gif',
     'https://media1.tenor.com/m/7mK8JHqPmjUAAAAd/anime-sad.gif',
     'https://media1.tenor.com/m/9pLqJkQ7HmIAAAAd/anime-depressed.gif',
-    // 😍 رومانسي
+    // 😍 Romantic
     'https://media1.tenor.com/m/a-4467qZq2kAAAAd/anime-tea.gif',
     'https://media1.tenor.com/m/2e_dM-uQk-kAAAAd/reading-book-anime.gif',
     'https://media1.tenor.com/m/9tK9VlJzQy0AAAAd/anime-love.gif',
     'https://media1.tenor.com/m/x8v1vLgHrP0AAAAd/anime-cute.gif',
-    // 🤔 محتار
+    // 🤔 Confused
     'https://media1.tenor.com/m/8jVKv7JPMjIAAAAd/anime-thinking.gif',
     'https://media1.tenor.com/m/4rXqNvJkMHcYAAAAd/anime-question.gif',
     'https://media1.tenor.com/m/9mKvL7PJqH0AAAAd/anime-confused.gif'
@@ -101,8 +100,8 @@ async function getAIResponse(prompt: string): Promise<string> {
                 'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`
             },
             body: JSON.stringify({
-                // ✅ نموذج مجاني شغال
-                model: 'google/gemini-2.0-flash-exp:free',
+                // ✅ النموذج المطلوب
+                model: 'meta-llama/llama-3.2-3b-instruct:free',
                 messages: [
                     { 
                         role: 'system', 
@@ -111,8 +110,9 @@ async function getAIResponse(prompt: string): Promise<string> {
 شروط صارمة:
 1. تحدثي بلهجة سعودية خفيفة ورايقة.
 2. ممنوع الكرنج أو الردود الطفولية تماماً.
-3. إذا ما تعرفين المعلومة، قولي "ما أعرف" ولا تخترعين.
-4. ردودك مختصرة ومباشرة (3-4 جمل كحد أقصى).`
+3. إذا ما تعرفين المعلومة، قولي "ما أعرف" أو "علمي علمك" ولا تخترعين.
+4. ردودك مختصرة ومباشرة (3-4 جمل كحد أقصى).
+5. خلي ردودك مفيدة ومحترمة ودائماً فيها لمسة حنان.`
                     },
                     { 
                         role: 'user', 
@@ -126,15 +126,27 @@ async function getAIResponse(prompt: string): Promise<string> {
 
         const data = await response.json();
         
-        if (!response.ok || !data.choices) {
-            console.error('❌ خطأ في OpenRouter:', data);
+        // التحقق من الأخطاء
+        if (!response.ok) {
+            console.error('❌ خطأ في OpenRouter:', response.status, data);
+            if (response.status === 401) {
+                return 'آسفة، مفتاح البوت مو شغال. كلم كاسبر يصلحه.';
+            }
+            if (response.status === 429) {
+                return 'آسفة، وصلت للحد المجاني اليومي. جرب بكره.';
+            }
             return 'عذراً، واجهت مشكلة حالياً. جرب بعد شوي.';
         }
 
-        return data.choices[0].message.content || 'ما جاني رد واضح';
+        if (!data.choices || !data.choices[0]?.message?.content) {
+            console.error('❌ رد غير متوقع من OpenRouter:', data);
+            return 'ما جاني رد واضح من النظام. جرب بعد شوي.';
+        }
+
+        return data.choices[0].message.content;
         
     } catch (error) {
-        console.error('❌ خطأ:', error);
+        console.error('❌ خطأ في الاتصال:', error);
         return 'عذراً، واجهت مشكلة في الاتصال. جرب بعد شوي.';
     }
 }
@@ -143,8 +155,10 @@ async function getAIResponse(prompt: string): Promise<string> {
 async function handleResponse(prompt: string, message: Message) {
     try {
         await message.channel.sendTyping();
+
         const reply = await getAIResponse(prompt);
         const gif = getGifByEmotion(prompt + ' ' + reply);
+        
         await message.reply(`${reply}\n\n${gif}`);
     } catch (error) {
         console.error('❌ خطأ:', error);
@@ -155,7 +169,8 @@ async function handleResponse(prompt: string, message: Message) {
 
 // ================ حدث تشغيل البوت ================
 client.once('ready', () => {
-    console.log(`✅ تم تشغيل البوت! ${client.user?.tag}`);
+    console.log(`✅ تم تشغيل البوت بنجاح!`);
+    console.log(`📌 اسم البوت: ${client.user?.tag}`);
     console.log(`📊 عدد السيرفرات: ${client.guilds.cache.size}`);
     console.log(`🎯 عدد الـ GIFs: ${GIFS.length}`);
 });
@@ -179,11 +194,13 @@ client.on('messageCreate', async (message: Message) => {
     }
 });
 
+// ================ تشغيل البوت ================
 client.login(process.env.DISCORD_TOKEN).catch(error => {
     console.error('❌ فشل تسجيل الدخول:', error);
     process.exit(1);
 });
 
+// ================ معالجة إيقاف البوت ================
 process.on('SIGINT', () => {
     console.log('🛑 جاري إيقاف البوت...');
     client.destroy();
