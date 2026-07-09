@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, EmbedBuilder } from 'discord.js';
+import { Client, GatewayIntentBits } from 'discord.js';
 import http from 'http';
 import Groq from 'groq-sdk';
 import dotenv from 'dotenv';
@@ -6,51 +6,36 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 http.createServer((req, res) => {
-    res.writeHead(200); res.end("Toriel is Elegant & Ready with Direct GIF Links.");
+    res.writeHead(200); res.end("Toriel is Active.");
 }).listen(process.env.PORT || 3000);
 
 const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
-    ]
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
 });
 
-// روابط مباشرة تنتهي بـ .gif عشان ديسكورد يعرضها كصورة متحركة بدون مربعات
-const workingGifs = [
-    'https://media1.tenor.com/m/1l6G7L7Y9YAAAAAd/osaka-azumanga-daioh.gif',
-    'https://media1.tenor.com/m/a-4467qZq2kAAAAd/anime-tea.gif',
-    'https://media1.tenor.com/m/h9s1-L7fS6UAAAAd/anime-wave.gif',
-    'https://media1.tenor.com/m/Z619x33eD0cAAAAd/anime-smile.gif',
-    'https://media1.tenor.com/m/2e_dM-uQk-kAAAAd/reading-book-anime.gif'
+// روابط Klipy اللي أنت جبتها، ديسكورد يفتحه كـ Native GIF
+const klipyGifs = [
+    'https://klipy.com/gifs/osaka-spin-3',
+    'https://klipy.com/gifs/anime-tea-drinking',
+    'https://klipy.com/gifs/anime-wave-hello',
+    'https://klipy.com/gifs/anime-smile-happy'
 ];
 
-async function handleGroqStream(prompt: string, message: any) {
-    const GROQ_API_KEY = process.env.GROQ_API_KEY;
-    if (!GROQ_API_KEY) return;
-
+async function handleResponse(prompt: string, message: any) {
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    
     try {
-        const groq = new Groq({ apiKey: GROQ_API_KEY });
-        const stream = await groq.chat.completions.create({
-            messages: [{ role: 'system', content: "أنتِ Toriel، ردي مختصر ومباشر. إذا عربي ردي عربي، إذا إنجليزي ردي إنجليزي." }, { role: 'user', content: prompt }],
+        const chat = await groq.chat.completions.create({
+            messages: [{ role: 'system', content: "رد مختصر جداً" }, { role: 'user', content: prompt }],
             model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-            stream: true,
         });
 
-        let fullResponse = '';
-        const replyMessage = await message.reply("⏳ ...");
-
-        for await (const chunk of stream) {
-            fullResponse += chunk.choices[0]?.delta?.content || '';
-        }
-
-        // استخدام رابط مباشر ينتهي بـ .gif
-        const embed = new EmbedBuilder()
-            .setDescription(fullResponse || "...")
-            .setImage(workingGifs[Math.floor(Math.random() * workingGifs.length)]);
-
-        await replyMessage.edit({ content: "", embeds: [embed] });
+        const reply = chat.choices[0].message.content;
+        const gif = klipyGifs[Math.floor(Math.random() * klipyGifs.length)];
+        
+        // نرسل النص وبعده الرابط مباشرة، ديسكورد بيحوله لـ GIF تلقائي
+        await message.reply(`${reply}\n${gif}`);
+        
     } catch (err) {
         console.error(err);
     }
@@ -58,9 +43,10 @@ async function handleGroqStream(prompt: string, message: any) {
 
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
-    if (!message.mentions.users.has(client.user!.id)) return;
-    const prompt = message.content.replace(/<@!?\d+>/g, '').trim();
-    if (prompt) await handleGroqStream(prompt, message);
+    if (message.mentions.users.has(client.user!.id)) {
+        const prompt = message.content.replace(/<@!?\d+>/g, '').trim();
+        if (prompt) await handleResponse(prompt, message);
+    }
 });
 
 client.login(process.env.DISCORD_TOKEN);
