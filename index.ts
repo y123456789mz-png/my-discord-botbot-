@@ -13,7 +13,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// بورت وهمي لـ Render لمنع التوقف
+// بورت وهمي لمنع توقف البوت على منصة Render
 http.createServer((req, res) => {
     res.writeHead(200); res.end("Toriel is Elegant & Ready.");
 }).listen(process.env.PORT || 3000);
@@ -45,12 +45,12 @@ function updateChannelHistory(channelId: string, role: 'user' | 'model', content
     if (history.length > 9) history.shift();
 }
 
-// دالة تشغيل صوت الترحيب في الـ VC
+// دالة تشغيل صوت الترحيب في الـ VC من المجلد الرئيسي مباشرة
 function playGreetingSound(connection: any) {
     try {
         const player = createAudioPlayer();
-        // مسار ملف الصوت hey.mp3 في المجلد الرئيسي
-        const soundPath = join(__dirname, 'hey.mp3'); 
+        // قراءة الملف من المجلد الرئيسي للمشروع مباشرة لمنع مشكلة المجلدات الفرعية
+        const soundPath = join(process.cwd(), 'hey.mp3'); 
         const resource = createAudioResource(soundPath, {
             inputType: StreamType.Arbitrary,
         });
@@ -66,8 +66,9 @@ function playGreetingSound(connection: any) {
 
 // دالة الذكاء الاصطناعي باستخدام Gemini الرسمية والسريعة
 async function askGemini(prompt: string, channelId: string): Promise<string> {
-    const GEMINI_KEY = process.env.GEMINI_API_KEY;
-    if (!GEMINI_KEY) return "أوه، يبدو أن مفتاح التشغيل الخاص بي مفقود.";
+    // محاولة قراءة المفتاح بكلا الاسمين لضمان عدم حدوث خطأ "المفتاح مفقود"
+    const GEMINI_KEY = process.env.GEMINI_API_KEY || process.env.GEMINI_KEY;
+    if (!GEMINI_KEY) return "أوه، يبدو أن مفتاح التشغيل الخاص بي مفقود في إعدادات البيئة.";
 
     try {
         const ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
@@ -93,7 +94,7 @@ async function askGemini(prompt: string, channelId: string): Promise<string> {
     }
 }
 
-// حدث دخول الأعضاء للـ الـ VC للترحيب الصوتي
+// حدث دخول الأعضاء للـ VC للترحيب الصوتي
 client.on('voiceStateUpdate', (oldState, newState) => {
     if (newState.member?.user.bot) return;
 
