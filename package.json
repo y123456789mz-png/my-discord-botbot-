@@ -1,24 +1,21 @@
 {
   "name": "my-discord-botbot",
   "version": "1.0.0",
-  "description": "Toriel Discord Bot powered by Gemini with Full Voice support",
-  "main": "index.ts",
+  "description": "Toriel Discord Bot powered by Gemini with full voice support",
+  "main": "dist/index.js",
   "scripts": {
-    "start": "tsx index.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "start": "node dist/index.js"
   },
   "dependencies": {
-    "@discordjs/opus": "^0.9.0",
     "@discordjs/voice": "^0.17.0",
     "@google/generative-ai": "^0.1.0",
     "discord.js": "^14.14.1",
     "dotenv": "^16.4.5",
-    "opusscript": "^0.0.8",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.7.1",
-    "typescript": "^5.3.3"
+    "libsodium-wrappers": "^0.7.15"
   },
   "devDependencies": {
-    "@types/node": "^20.11.24"
+    "@types/node": "^20.11.24",
+    "typescript": "^5.3.3"
   }
 }
